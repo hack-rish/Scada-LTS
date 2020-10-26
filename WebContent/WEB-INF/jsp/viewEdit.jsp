@@ -18,20 +18,208 @@
 --%>
 <%@ include file="/WEB-INF/jsp/include/tech.jsp" %>
 <%@page import="com.serotonin.mango.view.ShareUser"%>
+<style>
+  .backgroundImage{
+    display: none;
+  }
+  .componentElemet{
+    position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  top: 0;
+  pointer-events: none;
+  }
+  div#componentElemet * {
+    pointer-events: all;
+  }
+  .relative-table{
+    position: relative;
+  }
+  .gm-style-iw-d >div>div{
+    position: relative !important ;  
+    top: 0 !important;
+    left: 0 !important;
+  }
+  /* .gm-style-iw-d:hover .controlsDiv {
+    visibility: visible !important;
+  } */
+  .gm-style-iw-d .controlsDiv{
+    position: relative;
+    float: left;
+    visibility: visible !important;
+    margin-top: 5px;
+    clear: left;
+  }
+  .gm-style-iw-d .wirelessTempHumSensorContent:not(:empty) {
+    min-width: 201px;
+    height: 100;
+    margin-left: 21px;
+    position: relative;
+  }
+  .gm-style-iw-d .componentPt{
+    display: block;
+    float: left;
+  }
+  #mapAreaOptions {
+      display: none;
+  }
+</style>
 
 <tag:page dwr="ViewDwr" onload="doOnload"
 	js="view,dygraph-combined,dygraph-extra,dygraphsSplineUtils,dygraphsCharts"
 	css="jQuery/plugins/chosen/chosen,jQuery/plugins/jpicker/css/jPicker-1.1.6.min,jQuery/plugins/jquery-ui/css/south-street/jquery-ui-1.10.3.custom.min" 
 	jqplugins="chosen/chosen.jquery.min,jpicker/jpicker-1.1.6.min,jquery-ui/js/jquery-ui-1.10.3.custom.min" >
 	<link href="resources/js-ui/app/css/chunk-vendors.css" rel="stylesheet" type="text/css">
-    <link href="resources/js-ui/app/css/app.css" rel="stylesheet" type="text/css">
+  <link href="resources/js-ui/app/css/app.css" rel="stylesheet" type="text/css">
   <script type="text/javascript" src="resources/wz_jsgraphics.js"></script>
   <script type="text/javascript" src="resources/customClientScripts/customView.js"></script>
+  <script async defer src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBuCIAfY1ODCoVTvJyBtkZe-irKy0ljPXY"></script>
   <script type="text/javascript">
+    var markers = [], savedMarkersInfo=JSON.parse(localStorage.getItem('allMarkersArray'));/////
 
+    var renderedMap='',mapInfoWindowContent='';//map info window content generating from the libarary
+    var ActiveGraphicRendererId='',ActiveGraphicRendererImgSrc=null;//globaal var for storing selected icon
     mango.view.initEditView();
     mango.share.dwr = ViewDwr;
+
+// -----------------------------------------------------------------------------
+  //map info window content generator
+  function mapInfoWindowContentGenerator(id){
     
+    if(document.querySelector('#mapAreaOptions .controlsDiv img[src="images/plugin_delete.png"]')){
+      document.querySelector('#mapAreaOptions .controlsDiv img[src="images/plugin_delete.png"]').removeAttribute('onclick')
+      document.querySelector('#mapAreaOptions .controlsDiv img[src="images/plugin_delete.png"]').setAttribute("onclick","removeSelectedMarkers("+id+")");
+    }
+    if(document.querySelector('#mapAreaOptions .controlsDiv img[src="images/html_delete.png"]')){
+      document.querySelector('#mapAreaOptions .controlsDiv img[src="images/html_delete.png"]').removeAttribute('onclick')
+      document.querySelector('#mapAreaOptions .controlsDiv img[src="images/html_delete.png"]').setAttribute("onclick","removeSelectedMarkers("+id+")");
+    }
+    
+    var currentComponent=document.getElementById('mapAreaOptions') && document.getElementById('mapAreaOptions').innerHTML;
+
+    return currentComponent;
+  }
+  // render saved markers.
+  function renderAllSavedMrkers(renderedMap){
+    savedMarkersInfo.marker.forEach(function(elem,idx){
+      addMarker(elem);
+    })
+  }
+  // removing selected marker id
+  function removeSelectedMarkers(id){
+    console.log(markers)
+    var r = confirm("Are you sure want to delete the marker with id: "+id);
+    if (r == true) {
+      markers=markers.filter(function(elem,idx){
+        if(elem.id == id){
+          markers[idx].setMap(null)
+        }
+        return elem.id != id
+      })
+    } 
+  };
+  // draw markers on map
+  function addMarker(location,id) {
+    mapInfoWindowContent= mapInfoWindowContentGenerator(newVal=location.id ?location.id :id);
+    
+    let marker = new google.maps.Marker({
+      position: {"lat":location.lat,"lng":location.lng},
+      map: renderedMap,
+      draggable: true,
+      id: location.id ?location.id :id,
+      // label: (document.getElementById("componentList").value.substring(0, 2)).toUpperCase(),
+      title: ((document.getElementById('componentList').value).replace(/([A-Z])/g, ' $1')).toUpperCase(),
+      icon: "/ScadaBR/images/information.png",
+      infoContent: location.infoContent? location.infoContent :  mapInfoWindowContent
+    });
+    var infowindow = new google.maps.InfoWindow({
+        content: location.infoContent? location.infoContent :  mapInfoWindowContent,
+        });
+    google.maps.event.addListener(renderedMap, "click", function(event) {
+      if(infowindow.open)
+        infowindow.close();
+    });
+    //on click marker open popup
+    marker.addListener("click", () => {
+        infowindow.open(renderedMap, marker);
+    });
+    //update markers array
+    markers.push(marker);
+  }
+  function initMap() {
+      var initialCenter,initialZoom,initialInfoContent;
+      if(savedMarkersInfo && savedMarkersInfo.center && savedMarkersInfo.center.lat){
+        initialCenter = {'lat':savedMarkersInfo.center.lat,"lng":savedMarkersInfo.center.lng}
+      }
+      else{
+        initialCenter = { lat: 28, lng: 77 }
+      }
+      if(savedMarkersInfo && savedMarkersInfo.zoom){
+        initialZoom=savedMarkersInfo.zoom;
+      }
+      else{
+        initialZoom=5;
+      }
+    renderedMap = new google.maps.Map(document.getElementById("map"), {
+      zoom: initialZoom,
+      center: initialCenter,
+      mapTypeId: "terrain",
+    });
+    if(savedMarkersInfo && savedMarkersInfo.marker && savedMarkersInfo.marker.length){
+      renderAllSavedMrkers(renderedMap);//if there are saved markers
+    }
+    // This event listener will call addMarker() when the map is clicked.
+    renderedMap.addListener("click", (event) => {
+      // addViewComponent();//called the component
+      var dynamicId=new Date().getTime();
+      var newMarker=event.latLng.toJSON();
+        newMarker["id"]=dynamicId;
+      setTimeout(function(){
+        addMarker(newMarker,dynamicId);
+      },300)
+    });
+  }
+  function saveInfo(){
+    console.log(markers)
+    var allMarkerObj={},markerObjectsData=[],centerInfo=renderedMap.center.toJSON();
+    markers.forEach(function(elem,idx){
+      var position=elem.position.toJSON();
+      markerObjectsData.push({'lat':position.lat,'lng':position.lng,"id":elem.id,"infoContent": elem.infoContent});
+    })
+
+    allMarkerObj["center"]={'lat':centerInfo.lat,'lng':centerInfo.lng}
+    allMarkerObj["zoom"]=renderedMap.zoom;
+    allMarkerObj["marker"]= markerObjectsData;
+
+    localStorage.setItem('allMarkersArray',JSON.stringify(allMarkerObj));
+  }
+//---------------------------------------------------------------------------------------
+
+    function handleClick(myRadio) {
+        currentValue = myRadio.value;
+        if(myRadio.value == 'backgroundImages'){
+          let bgImg = document.querySelectorAll('.backgroundImage');
+        
+          document.querySelectorAll('.backgroundImage')[0].style.display = "table-row";
+          document.querySelectorAll('.backgroundImage')[1].style.display = "table-row";
+          document.querySelector('#map-area .viewBackground').removeAttribute("id","");
+          document.querySelector('#viewContent .viewBackground').setAttribute("id","viewBackground");
+          document.getElementById('map-area').style.display = "none";
+          document.getElementById('viewContent').style.display = "block";
+          document.getElementById('mapAreaOptions').innerHTML='';
+        } else{
+          document.querySelectorAll('.backgroundImage')[0].style.display = "none";
+          document.querySelectorAll('.backgroundImage')[1].style.display = "none";
+          document.querySelector('#viewContent .viewBackground').removeAttribute("id","");
+          document.querySelector('#map-area .viewBackground').setAttribute("id","viewBackground");
+          document.getElementById('map-area').style.display = "block";
+          document.getElementById('viewContent').style.display = "none";
+          initMap();
+          callMapMarkerContentGenerator();
+        }
+        resizeViewBackgroundToResolution(document.getElementById('view.resolution').value)
+    }
     function doOnload() {
         hide("sharedUsersDiv");
         <c:forEach items="${form.view.viewComponents}" var="vc">
@@ -56,15 +244,51 @@
         	document.getElementById("sizeLabel").style.visibility = 'hidden';
         }    
     }
-    
+    // function addViewComponent() {
+    //     console.log('add new workinfg !!!')
+    //     ViewDwr.addComponent($get("componentList"), function(viewComponent) {
+    //       if(document.querySelector('input[name="chooseView"]:checked').value === "backgroundImages"){
+    //         createViewComponent(viewComponent, true);
+    //         MiscDwr.notifyLongPoll(mango.longPoll.pollSessionId);
+    //       }
+    //       else{
+    //         createMapViewComponent(viewComponent);
+    //       }
+            
+    //     });
+    // }
+        
     function addViewComponent() {
+        document.getElementById('mapAreaOptions').innerHTML='';
         ViewDwr.addComponent($get("componentList"), function(viewComponent) {
             createViewComponent(viewComponent, true);
             MiscDwr.notifyLongPoll(mango.longPoll.pollSessionId);
         });
     }
-    
+    // -------------------------------------------------
+       function createMapViewComponent(viewComponent) {
+          //   console.log('content generaring!!!')
+                
+
+
+          //       let selectedView = $('googleMap').checked ? $("componentElemet") : $("viewContent");
+                
+          //       // configureComponentContent(content, viewComponent, selectedView, center);
+                
+          //       
+          //       console.log(typeof mapInfoWindowContent)
+          //       console.log(mapInfoWindowContent.innerHTML)
+          //       console.log(mapInfoWindowContent.outerHTML)
+          //       console.log(mapInfoWindowContent)
+          //     // addDnD(content.id);
+              
+          //     // if (center)
+          //     //     updateViewComponentLocation(content.id);
+       }
+    //--------------------------------------------------
     function createViewComponent(viewComponent, center) {
+      console.log(viewComponent)
+      console.log(center)
         var content;
         
         if (viewComponent.pointComponent)
@@ -79,9 +303,13 @@
         	content = $("customTemplate").cloneNode(true);
         else
             content = $("htmlTemplate").cloneNode(true);
+
+
+        var selectedView = $('googleMap').checked ? $("mapAreaOptions") : $("viewContent");
         
-        configureComponentContent(content, viewComponent, $("viewContent"), center);
-        
+        configureComponentContent(content, viewComponent, selectedView, center);
+
+
         if (viewComponent.defName == 'simpleCompound') {
             childContent = $("compoundChildTemplate").cloneNode(true);
             configureComponentContent(childContent, viewComponent.leadComponent, $("c"+ viewComponent.id +"Content"),
@@ -109,9 +337,18 @@
         
         if (center)
             updateViewComponentLocation(content.id);
+
+
+         console.log(document.getElementById('viewContent').innerHTML)
+          console.log(document.getElementById('viewContent').outerHTML)
     }
     
     function configureComponentContent(content, viewComponent, parent, center) {
+      console.log(content)
+      console.log(viewComponent)
+      console.log(parent)
+      console.log(center)
+      // console.log('i thnik draging started!!!')
         content.id = "c"+ viewComponent.id;
         content.viewComponentId = viewComponent.id;
         updateNodeIds(content, viewComponent.id);
@@ -169,7 +406,22 @@
         settingsEditor.open(cid);
     }
     
-    function openGraphicRendererEditor(cid) {
+
+    function UpdateGraphicRendererImage(){
+      console.log(ActiveGraphicRendererImgSrc)
+      console.log(ActiveGraphicRendererId)
+      if(ActiveGraphicRendererImgSrc)
+        document.getElementById(ActiveGraphicRendererId).querySelector('img').src=ActiveGraphicRendererImgSrc;
+      else{
+        if(ActiveGraphicRendererId)
+        document.getElementById(ActiveGraphicRendererId).querySelector('img').src="images/icon_comp.png";
+      }
+    }
+    
+    function openGraphicRendererEditor(event,cid) {
+      //setting selected icons
+      ActiveGraphicRendererId=event.target.closest('.controlsDiv').parentNode.getAttribute("id")+"Content";
+      console.log(event.target.closest('.controlsDiv').parentNode.getAttribute("id"))
         closeEditors(); 
         graphicRendererEditor.open(cid);
     }
@@ -246,7 +498,7 @@
 
     function deleteViewComponent(viewComponentId) {
         closeEditors();
-        if(confirm('<fmt:message key="common.confirmDelete"/>')) {
+        if(confirm('Are you sure you want delete?')) {
             ViewDwr.deleteViewComponent(viewComponentId);
 
             var div = $("c"+ viewComponentId);
@@ -254,7 +506,8 @@
             // Unregister the drag source from the DnD manager.
             div.dragSource.unregister();
             // Disconnect the event handling for drag ends on this guy.
-            $("viewContent").removeChild(div);
+            let selectedView = $('googleMap').checked ? $("componentElemet") : $("viewContent");
+            selectedView.removeChild(div);
         }
     }
 
@@ -295,70 +548,75 @@
         });
     }
 
-	function resizeViewBackground(width, height) {
-		var currentWidth = $("viewBackground").width;
-		var currentHeight = $("viewBackground").height;
+    function resizeViewBackground(width, height) {
+      var currentWidth = $("viewBackground").width;
+      var currentHeight = $("viewBackground").height;
 
-		if(width > currentWidth) {
-			$("viewBackground").width = parseInt(width,10) + 30;
-		}
-		if(height > currentHeight) {
-			$("viewBackground").height = parseInt(height,10) + 30;
-		}
-	}
+      if(width > currentWidth) {
+        $("viewBackground").width = parseInt(width,10) + 30;
+      }
+      if(height > currentHeight) {
+        $("viewBackground").height = parseInt(height,10) + 30;
+      }
+    }
 
-	function resizeViewBackgroundToResolution(size) {
-		if(document.getElementById("viewBackground").src.includes("spacer.gif")){
-			switch(size) {
-			   case "0":
-			   	$("viewBackground").width = 640;
-			   	$("viewBackground").height = 480;
-			       break;
-			   case "1":
-			   	$("viewBackground").width = 800;
-			   	$("viewBackground").height = 600;
-			       break;
-			   case "2":
-			   	$("viewBackground").width = 1024;
-			   	$("viewBackground").height = 768;
-			       break;
-			   case "3":
-			   	$("viewBackground").width = 1600;
-			   	$("viewBackground").height = 1200;
-			       break;
-			   case "4":
-			   	$("viewBackground").width = 1920;
-			   	$("viewBackground").height = 1080;
-			       break;
-			   default:
-			   	$("viewBackground").width = 1600;
-			   	$("viewBackground").height = 1200;
-			}
-        } else {
-        	document.getElementById("view.resolution").style.visibility = 'hidden';
-        	document.getElementById("sizeLabel").style.visibility = 'hidden';
+    function resizeViewBackgroundToResolution(size) {
+      console.log();
+      console.log('resizeViewBackgroundToResolution');
+      if(document.getElementById("viewBackground").src.includes("spacer.gif")){
+        switch(size) {
+          case "0":
+            $("viewBackground").width = 640;
+            $("viewBackground").height = 480;
+              break;
+          case "1":
+            $("viewBackground").width = 800;
+            $("viewBackground").height = 600;
+              break;
+          case "2":
+            $("viewBackground").width = 1024;
+            $("viewBackground").height = 768;
+              break;
+          case "3":
+            $("viewBackground").width = 1600;
+            $("viewBackground").height = 1200;
+              break;
+          case "4":
+            $("viewBackground").width = 1920;
+            $("viewBackground").height = 1080;
+              break;
+          default:
+            $("viewBackground").width = 1600;
+            $("viewBackground").height = 1200;
         }
+          } else {
+            document.getElementById("view.resolution").style.visibility = 'hidden';
+            document.getElementById("sizeLabel").style.visibility = 'hidden';
+          }
 
-	}
+    }
 
-	function deleteConfirm(){
-		if(document.getElementById("deleteCheckbox").checked) {
-			document.getElementById("deleteButton").style.visibility = 'visible';
-			setTimeout(function(){
-				document.getElementById("deleteCheckbox").checked = false;
-				document.getElementById("deleteButton").style.visibility = 'hidden';
-			}, 3000);
-		} else {
-			document.getElementById("deleteButton").style.visibility = 'hidden';
-		}
-	}
+    function deleteConfirm(){
+      if(document.getElementById("deleteCheckbox").checked) {
+        document.getElementById("deleteButton").style.visibility = 'visible';
+        setTimeout(function(){
+          document.getElementById("deleteCheckbox").checked = false;
+          document.getElementById("deleteButton").style.visibility = 'hidden';
+        }, 3000);
+      } else {
+        document.getElementById("deleteButton").style.visibility = 'hidden';
+      }
+    }
 
     window.onbeforeunload = confirmExit;
     function confirmExit(){
         return false;
     }
-
-
+    function callMapMarkerContentGenerator(){
+      if($('googleMap').checked){
+        addViewComponent();
+      }
+    }
   </script>
   
   <form name="view" class="view-edit-form" style="margin-bottom: 40px;" action="" modelAttribute="form" method="post" enctype="multipart/form-data">
@@ -379,13 +637,12 @@
                 <tr>
                   <td class="formLabelRequired" width="150"><fmt:message key="viewEdit.name"/></td>
                   <td class="formField" width="250">
+                  
                     <input type="text" name="view.name" value="${status.value}"/>
                   </td>
                   <td class="formError">${status.errorMessage}</td>
                 </tr>
               </spring:bind>
-
-
 
               <spring:bind path="form.view.xid">
                 <tr>
@@ -396,8 +653,25 @@
                   <td class="formError">${status.errorMessage}</td>
                 </tr>
               </spring:bind>
-              <spring:bind path="form.backgroundImageMP">
-                <tr>
+              <tr>
+                  <td class="formLabelRequired" width="150">
+                    Choose view 
+                  </td>
+                  <td>
+                      <input type="radio" checked id="backgroundImages" onchange="handleClick(this);"  name="chooseView" value="backgroundImages" v-model="chooseView">
+                      <label for="backgroundImages">Background images</label>
+                      <br>
+                      <input type="radio" id="googleMap" onchange="handleClick(this);" name="chooseView" value="googleMap" v-model="chooseView">
+                      <label for="googleMap">Google Map</label>
+                      <!-- <br> -->
+                      <!-- <span>chooseView: {{ chooseView }}</span> -->
+                    <!-- <input type="submit" name="upload" value="<fmt:message key="viewEdit.upload"/>" onclick="window.onbeforeunload = null;"/>
+                    <input type="submit" name="clearImage" value="<fmt:message key="viewEdit.clearImage"/>" onclick="window.onbeforeunload = null;"/> -->
+                  </td>
+                  <td></td>
+                </tr>
+              <spring:bind path="form.backgroundImageMP" >
+                <tr class="backgroundImage">
                   <td class="formLabelRequired"><fmt:message key="viewEdit.background"/></td>
                   <td class="formField">
                     <input type="file" name="backgroundImageMP"/>
@@ -405,7 +679,7 @@
                   <td class="formError">${status.errorMessage}</td>
                 </tr>
               </spring:bind>
-              <tr>
+              <tr class="backgroundImage">
                 <td colspan="2" align="center">
                   <input type="submit" name="upload" value="<fmt:message key="viewEdit.upload"/>" onclick="window.onbeforeunload = null;"/>
                   <input type="submit" name="clearImage" value="<fmt:message key="viewEdit.clearImage"/>" onclick="window.onbeforeunload = null;"/>
@@ -442,11 +716,9 @@
                   <td class="formError">${status.errorMessage}</td>
                 </tr>
               </spring:bind>
-
             </table>
           </div>
         </td>
-
         <td valign="top">
           <div class="borderDiv" id="sharedUsersDiv">
             <tag:sharedUsers doxId="viewSharing" noUsersKey="share.noViewUsers"/>
@@ -454,61 +726,88 @@
         </td>
       </tr>
     </table>
-
     <table>
       <tr>
         <td>
           <fmt:message key="viewEdit.viewComponents"/>:
-          <select id="componentList"></select>
+          <select id="componentList" onchange="callMapMarkerContentGenerator()"></select>
           <tag:img png="plugin_add" title="viewEdit.addViewComponent" onclick="addViewComponent()"/>
         </td>
         <td style="width:30px;"></td>
-
         <td>
           <input type="checkbox" id="iconifyCB" onclick="iconizeClicked();"/>
           <label for="iconifyCB"><fmt:message key="viewEdit.iconify"/></label>
         </td>
-
       </tr>
     </table>
 
-    <table width="100%" cellspacing="0" cellpadding="0">
+    <table class="relative-table" class="table" width="100%" cellspacing="0" cellpadding="0">
       <tr>
         <td>
-          <table cellspacing="0" cellpadding="0">
-            <tr>
+          <table class="table" cellspacing="0" cellpadding="0">
+              <tr>
+                  <td colspan="3">
+                      <div id="mapAreaOptions" >
+                        <span></span>
+                      </div>
+                      <div id="map-area" style="float: left;position: relative;display: block;">
+                          <div id="map"  style="position: absolute;top: 0;left: 0;width: 100%;height: 100%;">
+                          </div>
+                          <img  class="viewBackground img-responsive" src="images/spacer.gif" alt="" 
+                          style="top:1px;left:1px;"/>
+                      </div>
+                    <div id="viewContent" class="borderDiv" style="left:0px;top:0px;float:left;
+                            padding-right:1px;padding-bottom:1px;">
+                      <c:choose>
+                        <c:when test="${empty form.view.backgroundFilename}">
+                          <img id="viewBackground" class="viewBackground" src="images/spacer.gif" alt="" width="740" height="500"
+                                  style="top:1px;left:1px;"/>
+                        </c:when>
+                        <c:otherwise>
+                          <img id="viewBackground" class="viewBackground" src="${form.view.backgroundFilename}" alt=""
+                                  style="top:1px;left:1px;"/>
+                        </c:otherwise>
+                      </c:choose> 
+                      <%@ include file="/WEB-INF/jsp/include/staticEditor.jsp" %>
+                      <%@ include file="/WEB-INF/jsp/include/settingsEditor.jsp" %>
+                      <%@ include file="/WEB-INF/jsp/include/graphicRendererEditor.jsp" %>
+                      <%@ include file="/WEB-INF/jsp/include/compoundEditor.jsp" %>
+                      <%@ include file="/WEB-INF/jsp/include/customEditor.jsp" %>
+                    </div>
+                  </td>
+                </tr>
+            <!-- <tr>
               <td colspan="3">
+                <div id="map-area" style="float: left;position: relative;display: block;">
+                  <div id="map"  style="position: absolute;top: 0;left: 0;width: 100%;height: 100%;">
+                  </div>
+                  <img id="" class="viewBackground img-responsive" src="images/spacer.gif" alt="" 
+                          style="top:1px;left:1px;"/>
+                  <div id="componentElemet"></div>
+                </div>
                 <div id="viewContent" class="borderDiv" style="left:0px;top:0px;float:left;
                         padding-right:1px;padding-bottom:1px;">
                   <c:choose>
                     <c:when test="${empty form.view.backgroundFilename}">
-                      <img id="viewBackground" src="images/spacer.gif" alt="" width="740" height="500"
+                      <img id="viewBackground" class="viewBackground img-responsive" src="images/spacer.gif" alt="" 
                               style="top:1px;left:1px;"/>
                     </c:when>
                     <c:otherwise>
-                      <img id="viewBackground" src="${form.view.backgroundFilename}" alt=""
+                      <img id="viewBackground" class="viewBackground img-responsive" src="${form.view.backgroundFilename}" alt=""
                               style="top:1px;left:1px;"/>
                     </c:otherwise>
                   </c:choose>
-
-                  <%@ include file="/WEB-INF/jsp/include/staticEditor.jsp" %>
-                  <%@ include file="/WEB-INF/jsp/include/settingsEditor.jsp" %>
-                  <%@ include file="/WEB-INF/jsp/include/graphicRendererEditor.jsp" %>
-                  <%@ include file="/WEB-INF/jsp/include/compoundEditor.jsp" %>
-                  <%@ include file="/WEB-INF/jsp/include/customEditor.jsp" %>
                 </div>
               </td>
-            </tr>
-
+            </tr> -->
             <tr><td colspan="3">&nbsp;</td></tr>
-
             <tr>
               <td colspan="2" align="center">
-                <input type="submit" name="save" value="<fmt:message key="common.save"/>" onclick="window.onbeforeunload = null;"/>
+                <input type="submit" name="save" value="<fmt:message key="common.save"/>" onclick="saveInfo();window.onbeforeunload = null;"/>
                 <input type="submit" name="cancel" value="<fmt:message key="common.cancel"/>"/>
                 <label style="margin-left:15px;"><fmt:message key="viewEdit.viewDelete"/></label>
                 <input id="deleteCheckbox" type="checkbox" onclick="deleteConfirm()" style="padding-top:10px; vertical-align: middle;"/>
-				<input id="deleteButton" type="submit" name="delete" onclick="window.onbeforeunload = null; return confirm('<fmt:message key="common.confirmDelete"/>')" value="<fmt:message key="viewEdit.viewDeleteConfirm"/>" style="visibility:hidden; margin-left:15px;"/>
+				        <input id="deleteButton" type="submit" name="delete" onclick="window.onbeforeunload = null; return confirm('<fmt:message key="common.confirmDelete"/>')" value="<fmt:message key="viewEdit.viewDeleteConfirm"/>" style="visibility:hidden; margin-left:15px;"/>
               </td>
               <td></td>
             </tr>
@@ -517,6 +816,7 @@
           <div id="pointTemplate" onmouseover="showLayer('c'+ getViewComponentId(this) +'Controls');"
                   onmouseout="hideLayer('c'+ getViewComponentId(this) +'Controls');"
                   style="position:absolute;left:0px;top:0px;display:none;">
+            <div>TEST.............................</div>
             <div id="c_TEMPLATE_Content"><img src="images/icon_comp.png" alt=""/></div>
             <div id="c_TEMPLATE_Controls" class="controlsDiv">
               <table cellpadding="0" cellspacing="1">
@@ -531,7 +831,7 @@
                 </tr>
                 <tr><td><tag:img png="plugin_edit" onclick="openSettingsEditor(getViewComponentId(this))"
                         title="viewEdit.editPointView"/></td></tr>
-                <tr><td><tag:img png="graphic" onclick="openGraphicRendererEditor(getViewComponentId(this))"
+                <tr><td><tag:img png="graphic" onclick="openGraphicRendererEditor(event,getViewComponentId(this))"
                         title="viewEdit.editGraphicalRenderer"/></td></tr>
                 <tr><td><tag:img png="plugin_delete" onclick="deleteViewComponent(getViewComponentId(this))"
                         title="viewEdit.deletePointView"/></td></tr>
@@ -546,7 +846,6 @@
               </div>
             </div>
           </div>
-          
           <div id="htmlTemplate" onmouseover="showLayer('c'+ getViewComponentId(this) +'Controls');"
                   onmouseout="hideLayer('c'+ getViewComponentId(this) +'Controls');"
                   style="position:absolute;left:0px;top:0px;display:none;">
@@ -560,8 +859,6 @@
               </table>
             </div>
           </div>
-          
-          
           <div id="imageChartTemplate" onmouseover="showLayer('c'+ getViewComponentId(this) +'Controls');"
                   onmouseout="hideLayer('c'+ getViewComponentId(this) +'Controls');"
                   style="position:absolute;left:0px;top:0px;display:none;">
@@ -598,7 +895,7 @@
           <div id="compoundTemplate" onmouseover="showLayer('c'+ getViewComponentId(this) +'Controls');"
                   onmouseout="hideLayer('c'+ getViewComponentId(this) +'Controls');"
                   style="position:absolute;left:0px;top:0px;display:none;">
-            <span id="c_TEMPLATE_Content"></span>
+            <span id="c_TEMPLATE_Content" class="componentPt"></span>
             <div id="c_TEMPLATE_Controls" class="controlsDiv">
               <table cellpadding="0" cellspacing="1">
                 <tr onmouseover="showMenu('c'+ getViewComponentId(this) +'Info', 16, 0);"
@@ -617,7 +914,7 @@
               </table>
             </div>
             
-            <div id="c_TEMPLATE_ChildComponents"></div>
+            <div id="c_TEMPLATE_ChildComponents" class="wirelessTempHumSensorContent"></div>
           </div>
           
           <div id="compoundChildTemplate" style="position:absolute;left:0px;top:0px;display:none;">
