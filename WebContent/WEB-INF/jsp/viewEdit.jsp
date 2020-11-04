@@ -18,145 +18,299 @@
 --%>
 <%@ include file="/WEB-INF/jsp/include/tech.jsp" %>
 <%@page import="com.serotonin.mango.view.ShareUser"%>
-<style>
-  .backgroundImage{
-    display: none;
-  }
-  .componentElemet{
-    position: absolute;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  top: 0;
-  pointer-events: none;
-  }
-  div#componentElemet * {
-    pointer-events: all;
-  }
-  .relative-table{
-    position: relative;
-  }
-  .gm-style-iw-d >div>div{
-    position: relative !important ;  
-    top: 0 !important;
-    left: 0 !important;
-  }
-  /* .gm-style-iw-d:hover .controlsDiv {
-    visibility: visible !important;
-  } */
-  .gm-style-iw-d .controlsDiv{
-    position: relative;
-    float: left;
-    visibility: visible !important;
-    margin-top: 5px;
-    clear: left;
-  }
-  .gm-style-iw-d .wirelessTempHumSensorContent:not(:empty) {
-    min-width: 201px;
-    height: 100;
-    margin-left: 21px;
-    position: relative;
-  }
-  .gm-style-iw-d .componentPt{
-    display: block;
-    float: left;
-  }
-  #mapAreaOptions {
-      display: none;
-  }
-</style>
+
 
 <tag:page dwr="ViewDwr" onload="doOnload"
 	js="view,dygraph-combined,dygraph-extra,dygraphsSplineUtils,dygraphsCharts"
 	css="jQuery/plugins/chosen/chosen,jQuery/plugins/jpicker/css/jPicker-1.1.6.min,jQuery/plugins/jquery-ui/css/south-street/jquery-ui-1.10.3.custom.min" 
-	jqplugins="chosen/chosen.jquery.min,jpicker/jpicker-1.1.6.min,jquery-ui/js/jquery-ui-1.10.3.custom.min" >
+  jqplugins="chosen/chosen.jquery.min,jpicker/jpicker-1.1.6.min,jquery-ui/js/jquery-ui-1.10.3.custom.min" >
+  <!-- created & added stylesheet & remove css from this file. -->
+  <!link href="resources/js-ui/app/css/viewedit.css" rel="stylesheet" type="text/css">
+  <!!!!!!!!!!!!Stylimg Starts!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!>
+  <style>
+    .resetTable__fontSize{
+        font-size: 16px;
+    }
+    .backgroundImage{
+      display: none;
+    }
+    .componentElemet{
+      position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    top: 0;
+    pointer-events: none;
+    }
+    div#componentElemet * {
+      pointer-events: all;
+    }
+    .relative-table{
+      position: relative;
+    }
+    .gm-style-iw-d >div>div{
+      position: relative !important ;  
+      top: 0 !important;
+      left: 0 !important;
+    }
+    .gm-style-iw-d .controlsDiv{
+      position: relative;
+      float: left;
+      visibility: visible !important;
+      margin-top: 5px;
+      clear: left;
+    }
+    
+    .gm-style-iw-d .wirelessTempHumSensorContent:not(:empty),.overlay .wirelessTempHumSensorContent:not(:empty){
+      min-width: 201px;
+      height: 100;
+      margin-left: 21px;
+      position: relative;
+    }
+    .gm-style-iw-d .componentPt{
+      display: block;
+      float: left;
+    }
+    .overlay .componentPt{
+      display: block;
+    }
+    .overlay .componentPt>div{
+      position: relative !important;
+    }
+    #mapAreaOptions {
+        display: none;
+    }
+    .overlay {
+      padding: 5px;
+      border: 1px solid #39B54A;
+      background: rgba(255, 255, 255, 0.6);
+    }
+    .overlay> div{
+      position: relative !important ;  
+      top: 0 !important;
+      left: 0 !important;
+    }
+    .overlay:hover .controlsDiv{
+      visibility: visible !important;
+    }
+    .overlay .wirelessTempHumSensorContent>div:first-child {
+      max-width: 201px;
+      margin-bottom: 7px;
+    }
+    .overlay .wirelessTempHumSensorContent>div:not(:first-child) {
+      min-width: 50%;
+      float: left;
+    }
+    .wirelessTempHumSensorContent>div {
+        position: relative !important;
+    }
+  </style>
+   <!!!!!!!!!!!!Stylimg Starts!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!>
 	<link href="resources/js-ui/app/css/chunk-vendors.css" rel="stylesheet" type="text/css">
   <link href="resources/js-ui/app/css/app.css" rel="stylesheet" type="text/css">
   <script type="text/javascript" src="resources/wz_jsgraphics.js"></script>
   <script type="text/javascript" src="resources/customClientScripts/customView.js"></script>
-  <script async defer src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBuCIAfY1ODCoVTvJyBtkZe-irKy0ljPXY"></script>
-  <script type="text/javascript">
-    var markers = [], savedMarkersInfo=JSON.parse(localStorage.getItem('allMarkersArray'));/////
+  <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBuCIAfY1ODCoVTvJyBtkZe-irKy0ljPXY"></script> 
+  <!script src="resources/js-ui/app/js/viewedit.js"><!/script>
+  <! View Edit Script!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!>
+<script>
 
-    var renderedMap='',mapInfoWindowContent='';//map info window content generating from the libarary
-    var ActiveGraphicRendererId='',ActiveGraphicRendererImgSrc=null;//globaal var for storing selected icon
-    mango.view.initEditView();
-    mango.share.dwr = ViewDwr;
+var markers = [], componentEditersRefsObject='',//toggle editors for views
+    removingOverlayId='',removingOverlayConfirmType=1,//During deletion set get overlay id  & confirm type if no content generated
+    savedMarkersInfo=JSON.parse(localStorage.getItem('allMarkersArray'));/////
 
+    var renderedMap='',mapInfoWindowContent='map Info Window Content',stringToHTML;//map info window content generating from the libarary
+    var ActiveGraphicRendererId='',ActiveGraphicRendererImgSrc=null//globaal var for storing selected icon
+        ResponseOfGMapOverlayData=''//on edit store overlay data
 // -----------------------------------------------------------------------------
+  // stringToHTML = function (str) {
+  //   var parser = new DOMParser();
+  //   var doc = parser.parseFromString(str, 'text/html');
+  //   return doc.body;
+  // };
   //map info window content generator
-  function mapInfoWindowContentGenerator(id){
-    
-    if(document.querySelector('#mapAreaOptions .controlsDiv img[src="images/plugin_delete.png"]')){
-      document.querySelector('#mapAreaOptions .controlsDiv img[src="images/plugin_delete.png"]').removeAttribute('onclick')
-      document.querySelector('#mapAreaOptions .controlsDiv img[src="images/plugin_delete.png"]').setAttribute("onclick","removeSelectedMarkers("+id+")");
-    }
-    if(document.querySelector('#mapAreaOptions .controlsDiv img[src="images/html_delete.png"]')){
-      document.querySelector('#mapAreaOptions .controlsDiv img[src="images/html_delete.png"]').removeAttribute('onclick')
-      document.querySelector('#mapAreaOptions .controlsDiv img[src="images/html_delete.png"]').setAttribute("onclick","removeSelectedMarkers("+id+")");
-    }
-    
-    var currentComponent=document.getElementById('mapAreaOptions') && document.getElementById('mapAreaOptions').innerHTML;
+  // function mapInfoWindowContentGenerator(id){
 
-    return currentComponent;
-  }
+  //   if(document.querySelector('#mapAreaOptions >div')){
+  //     document.querySelector('#mapAreaOptions >div').removeAttribute('onmouseover');
+  //     document.querySelector('#mapAreaOptions >div').removeAttribute('onmouseout');
+  //   }
+  //   //for marker
+  //   if(document.querySelector('#mapAreaOptions .controlsDiv img[src="images/plugin_delete.png"]')){
+  //     document.querySelector('#mapAreaOptions .controlsDiv img[src="images/plugin_delete.png"]').removeAttribute('onclick')
+  //     document.querySelector('#mapAreaOptions .controlsDiv img[src="images/plugin_delete.png"]').setAttribute("onclick","removeSelectedMarkers("+id+")");
+  //   }
+  //   if(document.querySelector('#mapAreaOptions .controlsDiv img[src="images/html_delete.png"]')){
+  //     document.querySelector('#mapAreaOptions .controlsDiv img[src="images/html_delete.png"]').removeAttribute('onclick')
+  //     document.querySelector('#mapAreaOptions .controlsDiv img[src="images/html_delete.png"]').setAttribute("onclick","removeSelectedMarkers("+id+")");
+  //   }
+  //   var currentComponent=stringToHTML(document.getElementById('mapAreaOptions') && document.getElementById('mapAreaOptions').innerHTML);
+  //   document.getElementById('mapAreaOptions').innerHTML='';
+  //   //for overlay
+  //   if(currentComponent.querySelector('.controlsDiv img[src="images/plugin_delete.png"]')){
+  //     currentComponent.querySelector('.controlsDiv img[src="images/plugin_delete.png"]').removeAttribute('onclick')
+  //     currentComponent.querySelector('.controlsDiv img[src="images/plugin_delete.png"]').setAttribute("onclick","removeSelectedMarkers("+id+")");
+  //   }
+  //   if(currentComponent.querySelector('.controlsDiv img[src="images/html_delete.png"]')){
+  //     currentComponent.querySelector('.controlsDiv img[src="images/html_delete.png"]').removeAttribute('onclick')
+  //     currentComponent.querySelector('.controlsDiv img[src="images/html_delete.png"]').setAttribute("onclick","removeSelectedMarkers("+id+")");
+  //   }
+  //   return currentComponent.innerHTML;
+  // }
   // render saved markers.
   function renderAllSavedMrkers(renderedMap){
-    savedMarkersInfo.marker.forEach(function(elem,idx){
+    // ResponseOfGMapOverlayData
+    ResponseOfGMapOverlayData.marker.forEach(function(elem,idx){
       addMarker(elem);
     })
   }
   // removing selected marker id
   function removeSelectedMarkers(id){
     console.log(markers)
-    var r = confirm("Are you sure want to delete the marker with id: "+id);
-    if (r == true) {
-      markers=markers.filter(function(elem,idx){
-        if(elem.id == id){
-          markers[idx].setMap(null)
-        }
-        return elem.id != id
-      })
-    } 
+    markers=markers.filter(function(elem,idx){
+      if(elem.id == id){
+        markers[idx].setMap(null)
+      }
+      return elem.id != id
+    })
   };
-  // draw markers on map
-  function addMarker(location,id) {
-    mapInfoWindowContent= mapInfoWindowContentGenerator(newVal=location.id ?location.id :id);
+// ============================================================================
+//draggable methods
+  DraggableOverlay.prototype = new google.maps.OverlayView();
+  DraggableOverlay.prototype.onAdd = function() {
+    var container=document.createElement('div'),
+        that=this;
+        // console.clear();
+        console.log(typeof this.get('content'))
+        console.log(typeof this.get('content').nodeName)
+    if(this.get('content') && typeof this.get('content').nodeName!=='undefined'){
+      container.appendChild(this.get('content'));
+    }
+    else{
+      if(typeof this.get('content')==='string'){
+        container.innerHTML=this.get('content');
+      }
+      else{
+        return;
+      }
+    }
+    container.style.position='absolute';
+    container.draggable=true;
+        google.maps.event.addDomListener(
+          this.get('map').getDiv(),'mouseleave', function(){
+            google.maps.event.trigger(container,'mouseup');
+          }
+        );
+        google.maps.event.addDomListener(container, 'mousedown', function(e){
+          this.style.cursor='move';
+          that.map.set('draggable',false);
+          that.set('origin',e);
+
+          that.moveHandler  = google.maps.event.addDomListener(that.get('map').getDiv(),
+                                                              'mousemove',
+                                                              function(e){
+            var origin = that.get('origin'),
+                left   = origin.clientX-e.clientX,
+                top    = origin.clientY-e.clientY,
+                pos    = that.getProjection()
+                          .fromLatLngToDivPixel(that.get('position')),
+                latLng = that.getProjection()
+                          .fromDivPixelToLatLng(new google.maps.Point(pos.x-left,
+                                                                      pos.y-top));
+                that.set('origin',e);
+                that.set('position',latLng);
+                that.draw();
+            });
+      
+      
+        }
+      );
+        
+    google.maps.event.addDomListener(container,'mouseup',function(){
+      if(that.map)
+      that.map.set('draggable',true);
+      this.style.cursor='default';
+      google.maps.event.removeListener(that.moveHandler);
+    });
+        
     
-    let marker = new google.maps.Marker({
-      position: {"lat":location.lat,"lng":location.lng},
-      map: renderedMap,
-      draggable: true,
-      id: location.id ?location.id :id,
-      // label: (document.getElementById("componentList").value.substring(0, 2)).toUpperCase(),
-      title: ((document.getElementById('componentList').value).replace(/([A-Z])/g, ' $1')).toUpperCase(),
-      icon: "/ScadaBR/images/information.png",
-      infoContent: location.infoContent? location.infoContent :  mapInfoWindowContent
-    });
-    var infowindow = new google.maps.InfoWindow({
-        content: location.infoContent? location.infoContent :  mapInfoWindowContent,
-        });
-    google.maps.event.addListener(renderedMap, "click", function(event) {
-      if(infowindow.open)
-        infowindow.close();
-    });
-    //on click marker open popup
-    marker.addListener("click", () => {
-        infowindow.open(renderedMap, marker);
-    });
+    this.set('container',container)
+    this.getPanes().floatPane.appendChild(container);
+    google.maps.event.addDomListener(container, "click", function(e) {
+      e.preventDefault();
+      e.stopPropagation();
+    })
+  }
+
+  function DraggableOverlay(map,position,content)
+  {
+    if(typeof draw==='function'){
+      this.draw=draw;
+    }
+    this.setValues({position:position,container:null,
+                      content:content,map:map});
+  }
+  DraggableOverlay.prototype.draw = function() {
+    if(this.get('position') && this.get('container')) 
+    {
+      var pos = this.getProjection().fromLatLngToDivPixel(this.get('position'));
+      this.get('container').style.left = pos.x + 'px';
+      this.get('container').style.top = pos.y + 'px';
+    }
+  };
+  DraggableOverlay.prototype.onRemove = function() {
+    this.get('container').parentNode.removeChild(this.get('container'));
+    this.set('container',null)
+  };
+//=============================================================================
+// draw markers on click on map
+  function addMarkerOnClick(location,id,overlayContainer) {
+    var marker=new DraggableOverlay(
+              renderedMap, location,
+              overlayContainer
+        );
+        marker["id"]=id;
+        markers.push(marker);
+  }
+//add maker from save info
+  function addMarker(location) {
+    // console.log("location.content")
+    // console.log(location.content)
+    mpInfoCntnt=location.content && location.content.length?location.content:mapInfoWindowContent;
+    var marker=new DraggableOverlay(
+              renderedMap, new google.maps.LatLng({"lat":location.lat,"lng":location.lng}),
+              '<div class="overlay" onclick="javascript:void(0)">'+mpInfoCntnt+'</div>'
+        );
+        marker["id"]=location.id;
     //update markers array
     markers.push(marker);
   }
+//=============================================================================
+//removing all comp generator content & add in the current
+  function RemovingAllHaveContentPopupWithCurrent(currentMarkerId){
+      var overlayCompContainer=document.createElement("DIV");
+          overlayCompContainer.className="overlay__compContWraper";
+          overlayCompContainer.innerHTML=document.getElementById('componentEditersRefs').innerHTML;
+      document.querySelectorAll('.overlay').forEach(function(elem,idx){
+          if(elem.querySelector('.overlay__compContWraper'))
+          elem.querySelector('.overlay__compContWraper').remove();
+      })
+      var newId="c"+currentMarkerId;
+      document.getElementById(newId).before(overlayCompContainer)
+  }
+//=============================================================================
+//iniialize map
   function initMap() {
+    console.log('over started rendering!!!')
       var initialCenter,initialZoom,initialInfoContent;
-      if(savedMarkersInfo && savedMarkersInfo.center && savedMarkersInfo.center.lat){
-        initialCenter = {'lat':savedMarkersInfo.center.lat,"lng":savedMarkersInfo.center.lng}
+      if(ResponseOfGMapOverlayData && ResponseOfGMapOverlayData.center && ResponseOfGMapOverlayData.center.lat){
+        initialCenter = {'lat':ResponseOfGMapOverlayData.center.lat,"lng":ResponseOfGMapOverlayData.center.lng}
       }
       else{
         initialCenter = { lat: 28, lng: 77 }
       }
-      if(savedMarkersInfo && savedMarkersInfo.zoom){
-        initialZoom=savedMarkersInfo.zoom;
+      if(ResponseOfGMapOverlayData && ResponseOfGMapOverlayData.zoom){
+        initialZoom=ResponseOfGMapOverlayData.zoom;
       }
       else{
         initialZoom=5;
@@ -166,60 +320,118 @@
       center: initialCenter,
       mapTypeId: "terrain",
     });
-    if(savedMarkersInfo && savedMarkersInfo.marker && savedMarkersInfo.marker.length){
+   
+    if(ResponseOfGMapOverlayData && ResponseOfGMapOverlayData.marker && ResponseOfGMapOverlayData.marker.length){
       renderAllSavedMrkers(renderedMap);//if there are saved markers
     }
     // This event listener will call addMarker() when the map is clicked.
     renderedMap.addListener("click", (event) => {
-      // addViewComponent();//called the component
+      var overlayContainer=document.createElement("DIV");
+      overlayContainer.className="overlay";
+    //   overlayContainer.innerHTML="<div id='overlay__compContWraper'>"+document.getElementById('componentEditersRefs').innerHTML+"</div>";
       var dynamicId=new Date().getTime();
-      var newMarker=event.latLng.toJSON();
-        newMarker["id"]=dynamicId;
+      // var newMarker=event.latLng.toJSON();
+      var newMarker=event.latLng;
+      addMarkerOnClick(newMarker,dynamicId,overlayContainer);
       setTimeout(function(){
-        addMarker(newMarker,dynamicId);
-      },300)
+        addViewComponent(overlayContainer);//called the component
+        setTimeout(function(){//updating events & setting attributes
+            // console.log(overlayContainer)
+            // console.log(typeof overlayContainer)
+            var curentOCompIdSelector=$(overlayContainer.querySelector(':scope >div').getAttribute('id')+"Content");
+            var curentOCompIdGSelector=$(overlayContainer.querySelector(':scope >div').getAttribute('id')+"Graph");
+            var hasChildElems=curentOCompIdSelector && curentOCompIdSelector.innerHTML;
+            var hasChildGElems=curentOCompIdGSelector && curentOCompIdGSelector.innerHTML;
+            // console.log(curentOCompIdSelector)
+            // console.log(hasChildElems)
+            var pluginDelete=overlayContainer.querySelector('.controlsDiv img[src="images/plugin_delete.png"]');
+            var htmlDelete=overlayContainer.querySelector('.controlsDiv img[src="images/html_delete.png"]');
+            if(hasChildElems || hasChildGElems){
+              if(pluginDelete){
+                pluginDelete.setAttribute("overlayId",dynamicId);
+                pluginDelete.setAttribute("data-status",1);
+              }
+              if(htmlDelete){
+                htmlDelete.setAttribute("overlayId",dynamicId);
+                htmlDelete.setAttribute("data-status",1);
+              }
+            }
+            else{
+              if(pluginDelete){
+                pluginDelete.setAttribute("overlayId",dynamicId);
+                pluginDelete.setAttribute("data-status",0);
+                pluginDelete.click();
+              }
+              if(htmlDelete){
+                htmlDelete.setAttribute("overlayId",dynamicId);
+                htmlDelete.setAttribute("data-status",0);
+                htmlDelete.click();
+              }
+            }
+        },1000)
+      },50)
     });
   }
+//=============================================================================
   function saveInfo(){
-    console.log(markers)
     var allMarkerObj={},markerObjectsData=[],centerInfo=renderedMap.center.toJSON();
+    console.log(markers)
     markers.forEach(function(elem,idx){
       var position=elem.position.toJSON();
-      markerObjectsData.push({'lat':position.lat,'lng':position.lng,"id":elem.id,"infoContent": elem.infoContent});
-    })
-
+      // console.log(elem)
+      markerObjectsData.push({'lat':position.lat,'lng':position.lng,"id":elem.id,"content": elem.content});
+    });
     allMarkerObj["center"]={'lat':centerInfo.lat,'lng':centerInfo.lng}
     allMarkerObj["zoom"]=renderedMap.zoom;
     allMarkerObj["marker"]= markerObjectsData;
 
-    localStorage.setItem('allMarkersArray',JSON.stringify(allMarkerObj));
+    console.log(allMarkerObj)
+    // alert(allMarkerObj)
+    // console.log(typeof allMarkerObj)
+    // console.log(JSON.stringify(allMarkerObj))
+    // localStorage.setItem('allMarkersArray',JSON.stringify(allMarkerObj));
+    document.getElementById("viewMapData").value=JSON.stringify(allMarkerObj);
+    // console.log('document.getElementById("viewMapData").value')
+    // console.log(document.getElementById("viewMapData").value)
+    //alert(document.getElementById("viewMapData").value)
+   // ViewDwr.addMapData(JSON.stringify(allMarkerObj))
   }
 //---------------------------------------------------------------------------------------
 
-    function handleClick(myRadio) {
-        currentValue = myRadio.value;
-        if(myRadio.value == 'backgroundImages'){
-          let bgImg = document.querySelectorAll('.backgroundImage');
-        
-          document.querySelectorAll('.backgroundImage')[0].style.display = "table-row";
-          document.querySelectorAll('.backgroundImage')[1].style.display = "table-row";
-          document.querySelector('#map-area .viewBackground').removeAttribute("id","");
-          document.querySelector('#viewContent .viewBackground').setAttribute("id","viewBackground");
-          document.getElementById('map-area').style.display = "none";
-          document.getElementById('viewContent').style.display = "block";
-          document.getElementById('mapAreaOptions').innerHTML='';
-        } else{
-          document.querySelectorAll('.backgroundImage')[0].style.display = "none";
-          document.querySelectorAll('.backgroundImage')[1].style.display = "none";
-          document.querySelector('#viewContent .viewBackground').removeAttribute("id","");
-          document.querySelector('#map-area .viewBackground').setAttribute("id","viewBackground");
-          document.getElementById('map-area').style.display = "block";
-          document.getElementById('viewContent').style.display = "none";
-          initMap();
-          callMapMarkerContentGenerator();
-        }
-        resizeViewBackgroundToResolution(document.getElementById('view.resolution').value)
+function handleClick(myRadio) {
+    currentValue = myRadio.value;
+    if(myRadio.value == 'backgroundImages'){
+        let bgImg = document.querySelectorAll('.backgroundImage');
+    
+        document.querySelectorAll('.backgroundImage')[0].style.display = "table-row";
+        document.querySelectorAll('.backgroundImage')[1].style.display = "table-row";
+        document.querySelector('#map-area .viewBackground').removeAttribute("id","");
+        document.querySelector('#viewContent .viewBackground').setAttribute("id","viewBackground");
+        document.getElementById('map-area').style.display = "none";
+        document.getElementById('viewContent').style.display = "block";
+        document.getElementById('mapAreaOptions').innerHTML='';
+    } else{
+        document.querySelectorAll('.backgroundImage')[0].style.display = "none";
+        document.querySelectorAll('.backgroundImage')[1].style.display = "none";
+        document.querySelector('#viewContent .viewBackground').removeAttribute("id","");
+        document.querySelector('#map-area .viewBackground').setAttribute("id","viewBackground");
+        document.getElementById('map-area').style.display = "block";
+        document.getElementById('viewContent').style.display = "none";
+        initMap();
+        // console.clear()
     }
+    resizeViewBackgroundToResolution(document.getElementById('view.resolution').value)
+}
+function callMapMarkerContentGenerator(){
+    if($('googleMap').checked){
+    addViewComponent();
+    }
+}</script>
+<! View Edit Script Ends!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!>
+  <script type="text/javascript">
+    mango.view.initEditView();
+    mango.share.dwr = ViewDwr;
+
     function doOnload() {
         hide("sharedUsersDiv");
         <c:forEach items="${form.view.viewComponents}" var="vc">
@@ -244,51 +456,78 @@
         	document.getElementById("sizeLabel").style.visibility = 'hidden';
         }    
     }
+    function addViewComponent(overlayContainer='') {
+      // document.getElementById('mapAreaOptions').innerHTML='';
+      ViewDwr.addComponent($get("componentList"), function(viewComponent) {
+
+        if(!$('googleMap').checked){
+          createViewComponent(viewComponent, true);
+        }
+        else{
+          createMapViewComponent(viewComponent,overlayContainer);
+        }
+          MiscDwr.notifyLongPoll(mango.longPoll.pollSessionId);
+      });
+    }
     // function addViewComponent() {
-    //     console.log('add new workinfg !!!')
+    //     document.getElementById('mapAreaOptions').innerHTML='';
     //     ViewDwr.addComponent($get("componentList"), function(viewComponent) {
-    //       if(document.querySelector('input[name="chooseView"]:checked').value === "backgroundImages"){
     //         createViewComponent(viewComponent, true);
     //         MiscDwr.notifyLongPoll(mango.longPoll.pollSessionId);
-    //       }
-    //       else{
-    //         createMapViewComponent(viewComponent);
-    //       }
-            
     //     });
     // }
-        
-    function addViewComponent() {
-        document.getElementById('mapAreaOptions').innerHTML='';
-        ViewDwr.addComponent($get("componentList"), function(viewComponent) {
-            createViewComponent(viewComponent, true);
-            MiscDwr.notifyLongPoll(mango.longPoll.pollSessionId);
-        });
-    }
     // -------------------------------------------------
-       function createMapViewComponent(viewComponent) {
-          //   console.log('content generaring!!!')
-                
+       function createMapViewComponent(viewComponent,overlayContainer) {
+        var content;
+        
+        if (viewComponent.pointComponent)
+            content = $("pointTemplate").cloneNode(true);
+        else if (viewComponent.defName == 'imageChart')
+            content = $("imageChartTemplate").cloneNode(true);
+        else if (viewComponent.defName == 'enhancedImageChart')
+        	content = $("enhancedImageChartTemplate").cloneNode(true);
+        else if (viewComponent.compoundComponent)
+          content = $("compoundTemplate").cloneNode(true)
+        else if(viewComponent.customComponent)
+          {//alarm list content generator
+            content = $("customTemplate").cloneNode(true)
+            // alert(content)
+            console.log(content)
+          }
+        else
+            content = $("htmlTemplate").cloneNode(true);
 
 
-          //       let selectedView = $('googleMap').checked ? $("componentElemet") : $("viewContent");
-                
-          //       // configureComponentContent(content, viewComponent, selectedView, center);
-                
-          //       
-          //       console.log(typeof mapInfoWindowContent)
-          //       console.log(mapInfoWindowContent.innerHTML)
-          //       console.log(mapInfoWindowContent.outerHTML)
-          //       console.log(mapInfoWindowContent)
-          //     // addDnD(content.id);
-              
-          //     // if (center)
-          //     //     updateViewComponentLocation(content.id);
-       }
+        var selectedView = overlayContainer;
+        
+        configureGMapComponentContent(content, viewComponent, selectedView);
+
+
+        if (viewComponent.defName == 'simpleCompound') {
+            childContent = $("compoundChildTemplate").cloneNode(true);
+            configureGMapComponentContent(childContent, viewComponent.leadComponent, $("c"+ viewComponent.id +"Content"));
+        }
+        else if (viewComponent.defName == 'imageChart')
+            ;
+        else if (viewComponent.defName == 'enhancedImageChart') 
+        { 
+        	dygraphsCharts[viewComponent.id] = new DygraphsChart(null, viewComponent.id, false, true, viewComponent);
+        }
+        else if (viewComponent.compoundComponent) {
+            // Compound components only have their static content set at page load.
+            $set(content.id +"Content", viewComponent.staticContent);
+            
+            // Add the child components.
+            var childContent;
+            for (var i=0; i<viewComponent.childComponents.length; i++) {
+                childContent = $("compoundChildTemplate").cloneNode(true);
+                configureGMapComponentContent(childContent, viewComponent.childComponents[i].viewComponent,
+                        $("c"+ viewComponent.id +"ChildComponents"));
+            }
+        }
+      }
     //--------------------------------------------------
     function createViewComponent(viewComponent, center) {
-      console.log(viewComponent)
-      console.log(center)
         var content;
         
         if (viewComponent.pointComponent)
@@ -303,8 +542,7 @@
         	content = $("customTemplate").cloneNode(true);
         else
             content = $("htmlTemplate").cloneNode(true);
-
-
+        
         var selectedView = $('googleMap').checked ? $("mapAreaOptions") : $("viewContent");
         
         configureComponentContent(content, viewComponent, selectedView, center);
@@ -338,16 +576,24 @@
         if (center)
             updateViewComponentLocation(content.id);
 
-
-         console.log(document.getElementById('viewContent').innerHTML)
-          console.log(document.getElementById('viewContent').outerHTML)
     }
-    
+    function configureGMapComponentContent(content, viewComponent, parent) {
+        content.id = "c"+ viewComponent.id;
+        content.viewComponentId = viewComponent.id;
+        updateNodeIds(content, viewComponent.id);
+        if(parent)
+        parent.appendChild(content);
+        
+        if (viewComponent.defName == "html" || viewComponent.defName == "link" 
+            || viewComponent.defName == "scriptButton" || viewComponent.defName == "flex"
+            	|| viewComponent.defName == "chartComparator")
+            // HTML components only get updated at page load and editing.
+            updateHtmlComponentContent(content.id, viewComponent.content);
+        
+        show(content);
+
+    }
     function configureComponentContent(content, viewComponent, parent, center) {
-      console.log(content)
-      console.log(viewComponent)
-      console.log(parent)
-      console.log(center)
       // console.log('i thnik draging started!!!')
         content.id = "c"+ viewComponent.id;
         content.viewComponentId = viewComponent.id;
@@ -388,28 +634,24 @@
                 updateNodeIds(elem.childNodes[i], id);
         }
     }
-    
     function updateHtmlComponentContent(id, content) {
         if (!content || content == "")
             $set(id +"Content", '<img src="images/html.png" alt=""/>');
         else
             $set(id +"Content", content);
     }
-    
     function openStaticEditor(viewComponentId) {
         closeEditors();
         staticEditor.open(viewComponentId);
     }
-    
     function openSettingsEditor(cid) {
         closeEditors();
+        RemovingAllHaveContentPopupWithCurrent(cid);
         settingsEditor.open(cid);
     }
-    
-
     function UpdateGraphicRendererImage(){
-      console.log(ActiveGraphicRendererImgSrc)
-      console.log(ActiveGraphicRendererId)
+      // console.log(ActiveGraphicRendererImgSrc)
+      // console.log(ActiveGraphicRendererId)
       if(ActiveGraphicRendererImgSrc)
         document.getElementById(ActiveGraphicRendererId).querySelector('img').src=ActiveGraphicRendererImgSrc;
       else{
@@ -421,97 +663,129 @@
     function openGraphicRendererEditor(event,cid) {
       //setting selected icons
       ActiveGraphicRendererId=event.target.closest('.controlsDiv').parentNode.getAttribute("id")+"Content";
-      console.log(event.target.closest('.controlsDiv').parentNode.getAttribute("id"))
-        closeEditors(); 
-        graphicRendererEditor.open(cid);
+      // console.log(event.target.closest('.controlsDiv').parentNode.getAttribute("id"))
+      closeEditors(); 
+      RemovingAllHaveContentPopupWithCurrent(cid);
+      graphicRendererEditor.open(cid);
     }
     
     function openCompoundEditor(cid) {
-        closeEditors();
-        compoundEditor.open(cid);
+      closeEditors();
+      compoundEditor.open(cid);
     }
 
     function openCustomEditor(cid) {
-        closeEditors();
-        customEditor.open(cid);
+      closeEditors();
+      RemovingAllHaveContentPopupWithCurrent(cid);
+      customEditor.open(cid);
     }
     
     function positionEditor(compId, editorId) {
-        // Position and display the renderer editor.
-        var pDim = getNodeBounds($("c"+ compId));
-        var editDiv = $(editorId);
-        var eWidth = jQuery("#" + editorId).outerWidth(true);
-        var scrollL = document.documentElement.scrollLeft;
-        if (pDim.x < (screen.width - eWidth - pDim.w + scrollL - 10)) {
-            editDiv.style.left = (pDim.x + pDim.w + 5) +"px";
-            editDiv.style.top = (pDim.y) +"px";
-        } else {
-            editDiv.style.left = (pDim.x - eWidth - 5) + "px";
-            editDiv.style.top = (pDim.y) +"px";
-        }
-
+      // Position and display the renderer editor.
+      var pDim = getNodeBounds($("c"+ compId));
+      var editDiv = $(editorId);
+      var eWidth = jQuery("#" + editorId).outerWidth(true);
+      var scrollL = document.documentElement.scrollLeft;
+      if (pDim.x < (screen.width - eWidth - pDim.w + scrollL - 10)) {
+          editDiv.style.left = (pDim.x + pDim.w + 5) +"px";
+          editDiv.style.top = (pDim.y) +"px";
+      } else {
+          editDiv.style.left = (pDim.x - eWidth - 5) + "px";
+          editDiv.style.top = (pDim.y) +"px";
+      }
     }
 
     function positionCustomEditor(compId, editorId) {
-        // Position and display the renderer editor.
-        var pDim = getNodeBounds($("c"+ compId));
-        var editDiv = $(editorId);
-        var eWidth = jQuery("#" + editorId).outerWidth(true);
-        var scrollL = document.documentElement.scrollLeft;
-        editDiv.style.left = (pDim.x) +"px";
-        editDiv.style.top = (pDim.y + pDim.h) +"px";
+      // Position and display the renderer editor.
+      var pDim = getNodeBounds($("c"+ compId));
+      var editDiv = $(editorId);
+      var eWidth = jQuery("#" + editorId).outerWidth(true);
+      var scrollL = document.documentElement.scrollLeft;
+      editDiv.style.left = (pDim.x) +"px";
+      editDiv.style.top = (pDim.y + pDim.h) +"px";
     }
 
     function closeEditors() {
-        settingsEditor.close();
-        graphicRendererEditor.close();
-        staticEditor.close();
-        compoundEditor.close();
-        customEditor.close();
+      settingsEditor.close();
+      graphicRendererEditor.close();
+      staticEditor.close();
+      compoundEditor.close();
+      customEditor.close();
     }
 
     function updateViewComponentLocation(divId) {
-        var div = $(divId);
-        var lt = div.style.left;
-        var tp = div.style.top;
+      var div = $(divId);
+      var lt = div.style.left;
+      var tp = div.style.top;
 
-        // Remove the 'px's from the positions.
-        lt = lt.substring(0, lt.length-2);
-        tp = tp.substring(0, tp.length-2);
+      // Remove the 'px's from the positions.
+      lt = lt.substring(0, lt.length-2);
+      tp = tp.substring(0, tp.length-2);
 
-        // Save the new location.
-        ViewDwr.setViewComponentLocation(div.viewComponentId, lt, tp);
+      // Save the new location.
+      ViewDwr.setViewComponentLocation(div.viewComponentId, lt, tp);
     }
 
     function addDnD(divId) {
-        var div = $(divId);
-        var dragSource = new dojo.dnd.HtmlDragMoveSource(div);
-        dragSource.constrainTo($("viewBackground"));
+      var div = $(divId);
+      var dragSource = new dojo.dnd.HtmlDragMoveSource(div);
+      dragSource.constrainTo($("viewBackground"));
 
-        // Save the drag source in the div in case it gets deleted. See below.
-        div.dragSource = dragSource;
-        // Also, create a function to call on drag end to update the point view's location.
-        div.onDragEnd = function() {updateViewComponentLocation(divId);};
+      // Save the drag source in the div in case it gets deleted. See below.
+      div.dragSource = dragSource;
+      // Also, create a function to call on drag end to update the point view's location.
+      div.onDragEnd = function() {updateViewComponentLocation(divId);};
 
-        dojo.event.connect(dragSource, "onDragEnd", div.onDragEnd);
+      dojo.event.connect(dragSource, "onDragEnd", div.onDragEnd);
     }
 
-    function deleteViewComponent(viewComponentId) {
-        closeEditors();
+    function deleteViewComponent(viewComponentId,overlayComp='') {
+      closeEditors();
+      if(removingOverlayConfirmType){
         if(confirm('Are you sure you want delete?')) {
             ViewDwr.deleteViewComponent(viewComponentId);
 
             var div = $("c"+ viewComponentId);
-
+          if($('googleMap').checked){
+            // var parent=div.closest('.overlay');
+            // parent.removeChild(div);
+            if(removingOverlayId)
+            removeSelectedMarkers(removingOverlayId)
+          }
+          else{
             // Unregister the drag source from the DnD manager.
             div.dragSource.unregister();
             // Disconnect the event handling for drag ends on this guy.
-            let selectedView = $('googleMap').checked ? $("componentElemet") : $("viewContent");
+            let selectedView = $("viewContent");
             selectedView.removeChild(div);
+          }
         }
+      }
+      else{
+        ViewDwr.deleteViewComponent(viewComponentId);
+        var div = $("c"+ viewComponentId);
+        if($('googleMap').checked){
+          // var parent=div.closest('.overlay');
+          // parent.removeChild(div);
+          if(removingOverlayId)
+          removeSelectedMarkers(removingOverlayId)
+        }
+        else{
+          // Unregister the drag source from the DnD manager.
+          div.dragSource.unregister();
+          // Disconnect the event handling for drag ends on this guy.
+          let selectedView = $("viewContent");
+          selectedView.removeChild(div);
+        }
+        alert("Something went worng!! try again.");
+      }
     }
 
     function getViewComponentId(node) {
+        removingOverlayId=node.getAttribute('overlayId');
+        removingOverlayConfirmType=parseInt(node.getAttribute('data-status'));
+        console.log(node.getAttribute('data-status'))
+        console.log(removingOverlayConfirmType)
         while (!(node.viewComponentId))
             node = node.parentNode;
         return node.viewComponentId;
@@ -519,13 +793,14 @@
 
     function iconizeClicked() {
         ViewDwr.getViewComponentIds(function(ids) {
+          console.log(ids)
             var i, comp, content;
             if ($get("iconifyCB")) {
                 mango.view.edit.iconize = true;
                 for (i=0; i<ids.length; i++) {
                     comp = $("c"+ ids[i]);
                     content = $("c"+ ids[i] +"Content");
-                    if (!comp.savedContent)
+                    if (comp && !comp.savedContent)
                         comp.savedContent = content.innerHTML;
                     content.innerHTML = "<img src='images/plugin.png'/>";
                 }
@@ -535,9 +810,9 @@
                 for (i=0; i<ids.length; i++) {
                     comp = $("c"+ ids[i]);
                     content = $("c"+ ids[i] +"Content");
-                    if (comp.savedState)
+                    if (comp && comp.savedState)
                         mango.view.setContent(comp.savedState);
-                    else if (comp.savedContent)
+                    else if (comp && comp.savedContent)
                         content.innerHTML = comp.savedContent;
                     else
                         content.innerHTML = '';
@@ -607,20 +882,22 @@
         document.getElementById("deleteButton").style.visibility = 'hidden';
       }
     }
-
     window.onbeforeunload = confirmExit;
     function confirmExit(){
         return false;
     }
-    function callMapMarkerContentGenerator(){
-      if($('googleMap').checked){
-        addViewComponent();
-      }
-    }
   </script>
-  
+  <script>
+  window.onload = function() {
+    localStorage.clear();
+    if(ResponseOfGMapOverlayData){
+      $('googleMap').click();
+    }
+    console.log(ResponseOfGMapOverlayData)
+};
+</script>
   <form name="view" class="view-edit-form" style="margin-bottom: 40px;" action="" modelAttribute="form" method="post" enctype="multipart/form-data">
-    <table>
+    <table class="resetTable__fontSize">
       <tr>
         <td valign="top">
           <div class="borderDiv marR">
@@ -642,6 +919,13 @@
                   </td>
                   <td class="formError">${status.errorMessage}</td>
                 </tr>
+              </spring:bind>
+              <spring:bind path="form.view.mapData">
+                    <input type="hidden" name="view.mapData" id="viewMapData" value=""/>
+                    <script>
+                      ResponseOfGMapOverlayData='${status.value}';
+                      ResponseOfGMapOverlayData=ResponseOfGMapOverlayData?JSON.parse(ResponseOfGMapOverlayData): '';
+                    </script>
               </spring:bind>
 
               <spring:bind path="form.view.xid">
@@ -726,11 +1010,12 @@
         </td>
       </tr>
     </table>
-    <table>
+    <table class="resetTable__fontSize">
       <tr>
         <td>
           <fmt:message key="viewEdit.viewComponents"/>:
-          <select id="componentList" onchange="callMapMarkerContentGenerator()"></select>
+          <select id="componentList" ></select>
+          <!-- <select id="componentList" onchange="callMapMarkerContentGenerator()"></select> -->
           <tag:img png="plugin_add" title="viewEdit.addViewComponent" onclick="addViewComponent()"/>
         </td>
         <td style="width:30px;"></td>
@@ -768,38 +1053,16 @@
                                   style="top:1px;left:1px;"/>
                         </c:otherwise>
                       </c:choose> 
-                      <%@ include file="/WEB-INF/jsp/include/staticEditor.jsp" %>
-                      <%@ include file="/WEB-INF/jsp/include/settingsEditor.jsp" %>
-                      <%@ include file="/WEB-INF/jsp/include/graphicRendererEditor.jsp" %>
-                      <%@ include file="/WEB-INF/jsp/include/compoundEditor.jsp" %>
-                      <%@ include file="/WEB-INF/jsp/include/customEditor.jsp" %>
+                      <div id="componentEditersRefs">
+                        <%@ include file="/WEB-INF/jsp/include/staticEditor.jsp" %>
+                        <%@ include file="/WEB-INF/jsp/include/settingsEditor.jsp" %>
+                        <%@ include file="/WEB-INF/jsp/include/graphicRendererEditor.jsp" %>
+                        <%@ include file="/WEB-INF/jsp/include/compoundEditor.jsp" %>
+                        <%@ include file="/WEB-INF/jsp/include/customEditor.jsp" %>
+                      </div>
                     </div>
                   </td>
                 </tr>
-            <!-- <tr>
-              <td colspan="3">
-                <div id="map-area" style="float: left;position: relative;display: block;">
-                  <div id="map"  style="position: absolute;top: 0;left: 0;width: 100%;height: 100%;">
-                  </div>
-                  <img id="" class="viewBackground img-responsive" src="images/spacer.gif" alt="" 
-                          style="top:1px;left:1px;"/>
-                  <div id="componentElemet"></div>
-                </div>
-                <div id="viewContent" class="borderDiv" style="left:0px;top:0px;float:left;
-                        padding-right:1px;padding-bottom:1px;">
-                  <c:choose>
-                    <c:when test="${empty form.view.backgroundFilename}">
-                      <img id="viewBackground" class="viewBackground img-responsive" src="images/spacer.gif" alt="" 
-                              style="top:1px;left:1px;"/>
-                    </c:when>
-                    <c:otherwise>
-                      <img id="viewBackground" class="viewBackground img-responsive" src="${form.view.backgroundFilename}" alt=""
-                              style="top:1px;left:1px;"/>
-                    </c:otherwise>
-                  </c:choose>
-                </div>
-              </td>
-            </tr> -->
             <tr><td colspan="3">&nbsp;</td></tr>
             <tr>
               <td colspan="2" align="center">
@@ -943,3 +1206,4 @@
 </script>
 <%@ include file="/WEB-INF/jsp/include/vue/vue-app.js.jsp"%>
 <%@ include file="/WEB-INF/jsp/include/vue/vue-view.js.jsp"%>
+

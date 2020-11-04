@@ -169,6 +169,7 @@ create table mangoViews (
   background varchar(255),
   userId int not null,
   anonymousAccess int not null,
+  mapData blobs,  
   data blob not null
 );
 alter table mangoViews add constraint mangoViewsPk primary key (id);

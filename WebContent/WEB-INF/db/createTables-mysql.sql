@@ -176,6 +176,7 @@ create table mangoViews (
   userId int not null,
   anonymousAccess int not null,
   data longblob not null,
+  mapData varchar(100000),
   primary key (id)
 ) ENGINE=InnoDB;
 alter table mangoViews add constraint mangoViewsUn1 unique (xid);

@@ -224,6 +224,7 @@ public class V1__BaseVersion extends BaseJavaMigration {
         			+ "userId int not null,"
         			+ "anonymousAccess int not null,"
         			+ "data longblob not null,"
+					+"mapData longblob,"
         			+ "primary key (id)"
         		+ ") ENGINE=InnoDB;";
         

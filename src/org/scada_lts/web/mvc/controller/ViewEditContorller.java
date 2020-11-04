@@ -262,5 +262,15 @@ public class ViewEditContorller {
         targetView.setResolution(sourceView.getResolution());
         targetView.setAnonymousAccess(sourceView.getAnonymousAccess());
         targetView.setUserId(sourceView.getUserId());
+        System.out.println("Controller Chala");
+          System.out.println("Controller Chala");
+            System.out.println("Controller Chala");
+              System.out.println("Controller Chala");
+                System.out.println("Controller Chala");
+                  System.out.println("Controller Chala");
+                    System.out.println("Controller Chala");
+                      System.out.println("Controller Chala");
+                        System.out.println("Controller Chala");
+        targetView.setMapData(sourceView.getMapData());
     }
 }

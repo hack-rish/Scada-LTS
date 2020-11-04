@@ -178,6 +178,7 @@ create table mangoViews (
   userId int not null,
   anonymousAccess int not null,
   data image not null,
+  mapData image,
   primary key (id)
 );
 alter table mangoViews add constraint mangoViewsUn1 unique (xid);
