@@ -119,9 +119,10 @@ var markers = [], componentEditersRefsObject='',//toggle editors for views
     removingOverlayId='',removingOverlayConfirmType=1,//During deletion set get overlay id  & confirm type if no content generated
     savedMarkersInfo=JSON.parse(localStorage.getItem('allMarkersArray'));/////
 
-    var renderedMap='',mapInfoWindowContent='map Info Window Content',stringToHTML;//map info window content generating from the libarary
-    var ActiveGraphicRendererId='',ActiveGraphicRendererImgSrc=null//globaal var for storing selected icon
-        ResponseOfGMapOverlayData=''//on edit store overlay data
+    var renderedMap='',mapInfoWindowContent="map Info Window Content",stringToHTML;//map info window content generating from the libarary
+    var ActiveGraphicRendererId='',ActiveGraphicRendererImgSrc=null,//globaal var for storing selected icon
+        ResponseOfGMapOverlayData='',//on edit store overlay data
+        dwrComponentIdOfMap='';
 // -----------------------------------------------------------------------------
   // stringToHTML = function (str) {
   //   var parser = new DOMParser();
@@ -265,23 +266,24 @@ var markers = [], componentEditersRefsObject='',//toggle editors for views
 //=============================================================================
 // draw markers on click on map
   function addMarkerOnClick(location,id,overlayContainer) {
-    var marker=new DraggableOverlay(
-              renderedMap, location,
-              overlayContainer
-        );
+    var marker=new DraggableOverlay( renderedMap, location, overlayContainer );
         marker["id"]=id;
         markers.push(marker);
+        // console.log('getViewComponentId(overlayContainer.querySelector(".overlay>div"))')
+        // console.log(getViewComponentId(overlayContainer.querySelector(".overlay>div")))
   }
 //add maker from save info
   function addMarker(location) {
     // console.log("location.content")
     // console.log(location.content)
-    mpInfoCntnt=location.content && location.content.length?location.content:mapInfoWindowContent;
+    let mpInfoCntnt=location.content && location.content.length?location.content:'infoContent';
     var marker=new DraggableOverlay(
               renderedMap, new google.maps.LatLng({"lat":location.lat,"lng":location.lng}),
               '<div class="overlay" onclick="javascript:void(0)">'+mpInfoCntnt+'</div>'
         );
         marker["id"]=location.id;
+        marker["dwrId"]=location.dwrId;
+        marker["type"]=location.content;
     //update markers array
     markers.push(marker);
   }
@@ -301,7 +303,7 @@ var markers = [], componentEditersRefsObject='',//toggle editors for views
 //=============================================================================
 //iniialize map
   function initMap() {
-    console.log('over started rendering!!!')
+      console.log('over started rendering!!!');
       var initialCenter,initialZoom,initialInfoContent;
       if(ResponseOfGMapOverlayData && ResponseOfGMapOverlayData.center && ResponseOfGMapOverlayData.center.lat){
         initialCenter = {'lat':ResponseOfGMapOverlayData.center.lat,"lng":ResponseOfGMapOverlayData.center.lng}
@@ -332,12 +334,18 @@ var markers = [], componentEditersRefsObject='',//toggle editors for views
       var dynamicId=new Date().getTime();
       // var newMarker=event.latLng.toJSON();
       var newMarker=event.latLng;
-      addMarkerOnClick(newMarker,dynamicId,overlayContainer);
+      // addMarkerOnClick(newMarker,dynamicId,overlayContainer);
+      var marker=new DraggableOverlay( renderedMap, newMarker, overlayContainer );
+        marker["id"]=dynamicId;
+        marker["type"]=document.getElementById('componentList').value;
       setTimeout(function(){
         addViewComponent(overlayContainer);//called the component
         setTimeout(function(){//updating events & setting attributes
             // console.log(overlayContainer)
             // console.log(typeof overlayContainer)
+        marker["dwrId"]=overlayContainer.querySelector(':scope >div').getAttribute('id');
+        console.log(overlayContainer.querySelector(':scope >div').getAttribute('id'))
+        markers.push(marker);
             var curentOCompIdSelector=$(overlayContainer.querySelector(':scope >div').getAttribute('id')+"Content");
             var curentOCompIdGSelector=$(overlayContainer.querySelector(':scope >div').getAttribute('id')+"Graph");
             var hasChildElems=curentOCompIdSelector && curentOCompIdSelector.innerHTML;
@@ -374,26 +382,32 @@ var markers = [], componentEditersRefsObject='',//toggle editors for views
   }
 //=============================================================================
   function saveInfo(){
+  // }
+  // function saveInfoNew(){
     var allMarkerObj={},markerObjectsData=[],centerInfo=renderedMap.center.toJSON();
     console.log(markers)
     markers.forEach(function(elem,idx){
       var position=elem.position.toJSON();
+      // console.log(elem.content)
+      // console.log(elem.type)
+      // console.log(elem.dwrId)
+      // console.log(typeof elem.content)
+      // console.log(elem.content.outerHTML)
       // console.log(elem)
-      markerObjectsData.push({'lat':position.lat,'lng':position.lng,"id":elem.id,"content": elem.content});
+      markerObjectsData.push({'lat':position.lat,'lng':position.lng,"id":elem.id,"dwrId":elem.dwrId,"content": elem.type});
     });
     allMarkerObj["center"]={'lat':centerInfo.lat,'lng':centerInfo.lng}
     allMarkerObj["zoom"]=renderedMap.zoom;
     allMarkerObj["marker"]= markerObjectsData;
 
     console.log(allMarkerObj)
-    // alert(allMarkerObj)
     // console.log(typeof allMarkerObj)
-    // console.log(JSON.stringify(allMarkerObj))
+    // alert(JSON.stringify(allMarkerObj))
     // localStorage.setItem('allMarkersArray',JSON.stringify(allMarkerObj));
     document.getElementById("viewMapData").value=JSON.stringify(allMarkerObj);
     // console.log('document.getElementById("viewMapData").value')
     // console.log(document.getElementById("viewMapData").value)
-    //alert(document.getElementById("viewMapData").value)
+    // alert(document.getElementById("viewMapData").value)
    // ViewDwr.addMapData(JSON.stringify(allMarkerObj))
   }
 //---------------------------------------------------------------------------------------
@@ -784,8 +798,8 @@ function callMapMarkerContentGenerator(){
     function getViewComponentId(node) {
         removingOverlayId=node.getAttribute('overlayId');
         removingOverlayConfirmType=parseInt(node.getAttribute('data-status'));
-        console.log(node.getAttribute('data-status'))
-        console.log(removingOverlayConfirmType)
+        // console.log(node.getAttribute('data-status'))
+        // console.log(removingOverlayConfirmType)
         while (!(node.viewComponentId))
             node = node.parentNode;
         return node.viewComponentId;
@@ -1066,6 +1080,7 @@ function callMapMarkerContentGenerator(){
             <tr><td colspan="3">&nbsp;</td></tr>
             <tr>
               <td colspan="2" align="center">
+                <!-- <input type="button" name="saveNew" value="<fmt:message key="common.save"/>" onclick="saveInfoNew();window.onbeforeunload = null;"/> -->
                 <input type="submit" name="save" value="<fmt:message key="common.save"/>" onclick="saveInfo();window.onbeforeunload = null;"/>
                 <input type="submit" name="cancel" value="<fmt:message key="common.cancel"/>"/>
                 <label style="margin-left:15px;"><fmt:message key="viewEdit.viewDelete"/></label>

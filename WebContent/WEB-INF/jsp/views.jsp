@@ -26,9 +26,12 @@
   <script type="text/javascript" src="resources/customClientScripts/customView.js"></script>
   <link href="resources/js-ui/app/css/chunk-vendors.css" rel="stylesheet" type="text/css">
   <link href="resources/js-ui/app/css/app.css" rel="stylesheet" type="text/css">
-  <link
+  <!-- added bysteve -->
+  <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBuCIAfY1ODCoVTvJyBtkZe-irKy0ljPXY"></script> 
+  <!-- sweetalert replced with js slert because of not found in folder -->
+  <!-- <link
 	href="resources/app/bower_components/sweetalert2/dist/sweetalert2.min.css"
-	rel="stylesheet" type="text/css">
+	rel="stylesheet" type="text/css"> -->
     <style>
     	 table {
              border-collapse: separate !important;
@@ -41,8 +44,19 @@
          .rowTableAlt {
              background-color: #DCDCDC;
          }
+		 #viewContent,.viewContent{
+			 display: none;
+		 }
+		 .viewContent{
+			float: left;position: relative;display: block;
+		 }
+		.overlay {
+		padding: 5px;
+		border: 1px solid #39B54A;
+		background: rgba(255, 255, 255, 0.6);
+		}
     </style>
-    <script type="text/javascript" src="resources/app/bower_components/sweetalert2/dist/sweetalert2.min.js"></script>
+    <!-- <script type="text/javascript" src="resources/app/bower_components/sweetalert2/dist/sweetalert2.min.js"></script> -->
 
 	<script type="text/javascript">
 	
@@ -68,14 +82,17 @@
         url:'/ScadaBR/api/config/replacealert',
             success: function(data){
               if (data==true) {
-            	  window.alert =  function(message) {
-            	        swal({
-            	         title: message,
-            	         text: "I will close in 6 seconds.",
-            	         timer: 6000,
-            	         showConfirmButton: true
-            	       });
-            	 }
+				  console.log(data)
+				alert(data)
+            	//   window.alert =  function(message) {
+				// 	alert(data)
+            	//         swal({
+            	//          title: message,
+            	//          text: "I will close in 6 seconds.",
+            	//          timer: 6000,
+            	//          showConfirmButton: true
+            	//        });
+            	//  }
               }
             },
             error: function(XMLHttpRequest, textStatus, errorThrown) {
@@ -264,8 +281,8 @@
 		</tr>
 		
 	</table>
-	
-	<table>
+
+	<table > 
 		<tr>
 			<td class="smallTitle" id="fsOut">
 				<fmt:message key="fullScreenOut"/>
@@ -273,14 +290,185 @@
 		</tr>
 	</table>
 
-	<script type="text/javascript">
-	
-		checkFullScreen();
-	
-	</script>
-
 	<tag:displayView view="${currentView}" emptyMessageKey="views.noViews" />
+	<div class="viewContent">
+		<div id="mapAreaOptions" >
+		<span></span>
+		</div>
+		<div id="map"  style="position: absolute;top: 0;left: 0;width: 100%;height: 100%;">
+		</div>
+	</div>
 </tag:page>
+<script type="text/javascript">
+// ============================================================================
+
+//draggable methods
+DraggableOverlay.prototype = new google.maps.OverlayView();
+	DraggableOverlay.prototype.onAdd = function() {
+		var container=document.createElement('div'),
+			that=this;
+			// console.clear();
+			console.log(typeof this.get('content'))
+			console.log(typeof this.get('content').nodeName)
+		if(this.get('content') && typeof this.get('content').nodeName!=='undefined')
+		{
+			container.appendChild(this.get('content'));
+		}
+		else
+		{
+			if(this.get('content') && typeof this.get('content')==='string')
+			{
+				container.innerHTML=this.get('content');
+			}
+			else
+			{
+				return;
+			}
+		}
+		container.style.position='absolute';
+		container.draggable=true;
+			google.maps.event.addDomListener(
+			this.get('map').getDiv(),'mouseleave', function(){
+				google.maps.event.trigger(container,'mouseup');
+			}
+			);
+			google.maps.event.addDomListener(container, 'mousedown', function(e){
+			this.style.cursor='move';
+			that.map.set('draggable',false);
+			that.set('origin',e);
+
+			that.moveHandler  = google.maps.event.addDomListener(that.get('map').getDiv(),
+																'mousemove',
+																function(e){
+				var origin = that.get('origin'),
+					left   = origin.clientX-e.clientX,
+					top    = origin.clientY-e.clientY,
+					pos    = that.getProjection()
+							.fromLatLngToDivPixel(that.get('position')),
+					latLng = that.getProjection()
+							.fromDivPixelToLatLng(new google.maps.Point(pos.x-left,
+																		pos.y-top));
+					that.set('origin',e);
+					that.set('position',latLng);
+					that.draw();
+				});
+			}
+		);
+			
+		google.maps.event.addDomListener(container,'mouseup',function(){
+		if(that.map)
+		that.map.set('draggable',true);
+		this.style.cursor='default';
+		google.maps.event.removeListener(that.moveHandler);
+		});
+			
+		
+		this.set('container',container)
+		this.getPanes().floatPane.appendChild(container);
+		google.maps.event.addDomListener(container, "click", function(e) {
+		e.preventDefault();
+		e.stopPropagation();
+		})
+  	}
+
+  	function DraggableOverlay(map,position,content)
+  	{
+		if(typeof draw==='function'){
+		this.draw=draw;
+		}
+		this.setValues({position:position,container:null,
+						content:content,map:map});
+  	}
+	DraggableOverlay.prototype.draw = function() {
+		if(this.get('position') && this.get('container')) 
+		{
+			var pos = this.getProjection().fromLatLngToDivPixel(this.get('position'));
+			this.get('container').style.left = pos.x + 'px';
+			this.get('container').style.top = pos.y + 'px';
+		}
+	};
+	DraggableOverlay.prototype.onRemove = function() {
+		this.get('container').parentNode.removeChild(this.get('container'));
+		this.set('container',null)
+	};
+//=============================================================================
+</script>
+<script type="text/javascript">
+	var responseComponentData='${currentView.mapData}',//getting backend data
+		mapInfoWindowContent="Info Window content!!",
+		markers=[];
+		
+		responseComponentData=responseComponentData?JSON.parse(responseComponentData):responseComponentData;
+		console.log(responseComponentData);
+//-----------------
+	window.onload=function(){
+		checkFullScreen();
+		// alert(typeof responseComponentData)
+		// alert(responseComponentData)
+		// console.clear();
+		// console.log()
+		if(responseComponentData){
+			document.querySelector('.viewContent').style.display="block";
+			document.querySelector('.viewContent').appendChild(document.querySelector('#viewContent img'));
+			initMap(responseComponentData);
+			console.log(responseComponentData)
+		}
+		else{
+			document.getElementById('viewContent').style.display="block";
+		}
+	}
+//=============================================================================
+//iniialize map
+function initMap() {
+	
+      var initialCenter,initialZoom,initialInfoContent;
+      if(responseComponentData && responseComponentData.center && responseComponentData.center.lat){
+        initialCenter = {'lat':responseComponentData.center.lat,"lng":responseComponentData.center.lng}
+      }
+      else{
+        initialCenter = { lat: 28, lng: 77 }
+      }
+      if(responseComponentData && responseComponentData.zoom){
+        initialZoom=responseComponentData.zoom;
+      }
+      else{
+        initialZoom=5;
+      }
+	  
+    renderedMap = new google.maps.Map(document.getElementById("map"), {
+      zoom: initialZoom,
+      center: initialCenter,
+      mapTypeId: "terrain",
+    });
+   
+    if(responseComponentData && responseComponentData.marker && responseComponentData.marker.length){
+      renderAllSavedMrkers(renderedMap);//if there are saved markers
+    }
+  }
+//=============================================================================
+//looping throught all markers
+	function renderAllSavedMrkers(renderedMap){
+		// responseComponentData
+		responseComponentData.marker.forEach(function(elem,idx){
+			addMarker(elem);
+		})
+  	}
+//=============================================================================
+//add maker from save info
+	function addMarker(location) {
+		console.log("location.content")
+		console.log(location)
+		let mpInfoCntnt=location.content && location.content.length?location.content:'infoContent';
+		var marker=new DraggableOverlay(
+				renderedMap, new google.maps.LatLng({"lat":location.lat,"lng":location.lng}),
+				'<div class="overlay" onclick="javascript:void(0)">'+mpInfoCntnt+'</div>'
+			);
+			marker["id"]=location.id;
+		//update markers array
+		markers.push(marker);
+	}
+//=============================================================================
+</script>
 <%@ include file="/WEB-INF/jsp/include/vue/vue-app.js.jsp"%>
 <%@ include file="/WEB-INF/jsp/include/vue/vue-view.js.jsp"%>
 <%@ include file="/WEB-INF/jsp/include/vue/vue-charts.js.jsp"%>
