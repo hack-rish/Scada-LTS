@@ -182,6 +182,7 @@ CREATE TABLE mangoviews (
   background VARCHAR2(255 CHAR),
   userId NUMBER(10,0) NOT NULL,
   anonymousAccess NUMBER(10,0) NOT NULL,
+  mapData BLOB,
   data BLOB NOT NULL
 );
 

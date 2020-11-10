@@ -181,6 +181,7 @@ create table mangoViews (
   userId int not null,
   anonymousAccess int not null,
   data bytea not null,
+  mapData bytea,
   primary key (id)
 ) ;
 alter table mangoViews add constraint mangoViewsUn1 unique (xid);

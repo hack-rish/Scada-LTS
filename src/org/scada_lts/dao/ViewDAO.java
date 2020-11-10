@@ -43,7 +43,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.serotonin.mango.view.ShareUser;
 import com.serotonin.mango.view.View;
-
+import java.io.*;
 
 /**
  * View DAO
@@ -64,6 +64,7 @@ public class ViewDAO implements GenericDAO<View> {
 	private static final String COLUMN_NAME_ANONYMOUS_ACCESS = "anonymousAccess";
 	private static final String COLUMN_NAME_WIDTH = "width";
 	private static final String COLUMN_NAME_HEIGHT = "height";
+		private static final String COLUMN_NAME_MAPDATA = "mapData";
 	 
 	//mangoViewUsers
 	private static final String COLUMN_NAME_MVU_USER_ID = "userid";
@@ -89,9 +90,26 @@ public class ViewDAO implements GenericDAO<View> {
 				+ COLUMN_NAME_USER_ID+", "
 				+ COLUMN_NAME_ANONYMOUS_ACCESS+", "
 				+ COLUMN_NAME_WIDTH+", "
-				+ COLUMN_NAME_HEIGHT+" "
+				+ COLUMN_NAME_HEIGHT+", "
+				+COLUMN_NAME_MAPDATA+" "
 			+ "from "
 				+ "mangoViews";
+
+    private static final String VIEW_SELECT_OLD = ""
+			+"select "
+				+ COLUMN_NAME_DATA+", "
+				+ COLUMN_NAME_ID+", "
+				+ COLUMN_NAME_XID+", "
+				+ COLUMN_NAME_NAME+", "
+				+ COLUMN_NAME_BACKGROUND+", "
+				+ COLUMN_NAME_USER_ID+", "
+				+ COLUMN_NAME_ANONYMOUS_ACCESS+", "
+				+ COLUMN_NAME_WIDTH+", "
+				+ COLUMN_NAME_HEIGHT+" "
+				
+			+ "from "
+				+ "mangoViews";
+
 	
 	private static final String VIEW_FILTER_BASE_ON_ID=""
 			 +COLUMN_NAME_ID+"=?";
@@ -111,8 +129,9 @@ public class ViewDAO implements GenericDAO<View> {
 				+ COLUMN_NAME_ANONYMOUS_ACCESS+", "
 				+ COLUMN_NAME_DATA+","
 				+ COLUMN_NAME_HEIGHT+", "
-				+ COLUMN_NAME_WIDTH+") "
-			+ "values (?,?,?,?,?,?,?,?)";
+				+ COLUMN_NAME_WIDTH+", "
+				+ COLUMN_NAME_MAPDATA+") "
+			+ "values (?,?,?,?,?,?,?,?,?)";
 	
 	private static final String VIEW_UPDATE = ""
 			+"update mangoViews set "
@@ -122,7 +141,8 @@ public class ViewDAO implements GenericDAO<View> {
 				+ COLUMN_NAME_ANONYMOUS_ACCESS+"=?, "
 				+ COLUMN_NAME_DATA+"=?, "
 				+ COLUMN_NAME_HEIGHT+"=?, "
-				+ COLUMN_NAME_WIDTH+"=? "
+				+ COLUMN_NAME_WIDTH+"=?, "
+				+ COLUMN_NAME_MAPDATA+"=? "
 			+ "where "
 				+ COLUMN_NAME_ID+"=?";
 	
@@ -201,6 +221,7 @@ public class ViewDAO implements GenericDAO<View> {
 			v.setAnonymousAccess(rs.getInt(COLUMN_NAME_ANONYMOUS_ACCESS));
 			v.setHeight(rs.getInt(COLUMN_NAME_HEIGHT));
 			v.setWidth(rs.getInt(COLUMN_NAME_WIDTH));
+		    v.setMapData(rs.getString(COLUMN_NAME_MAPDATA));
 			
 			return v;
 		}
@@ -231,7 +252,17 @@ public class ViewDAO implements GenericDAO<View> {
 	}
 	@Override
 	public List<View> findAll() {
-		return (List<View>) DAO.getInstance().getJdbcTemp().query(VIEW_SELECT, new Object[]{}, new ViewRowMapper() );
+		List<View> testViews;
+		try
+		{
+
+	testViews=(List<View>) DAO.getInstance().getJdbcTemp().query(VIEW_SELECT, new Object[]{}, new ViewRowMapper() );
+		}
+		catch(Exception e)
+		{
+	testViews=(List<View>) DAO.getInstance().getJdbcTemp().query(VIEW_SELECT_OLD, new Object[]{}, new ViewRowMapper() );
+		}
+		return testViews;
 	}
 
 	@Override
@@ -273,13 +304,28 @@ public class ViewDAO implements GenericDAO<View> {
 		if (LOG.isTraceEnabled()) {
 			  LOG.trace(entity);
 		}
-			
+			System.out.println("///////////////////////////////////////////////////");
+				System.out.println("///////////////////////////////////////////////////");
+					System.out.println("///////////////////////////////////////////////////");
+						System.out.println("///////////////////////////////////////////////////");
+							System.out.println("///////////////////////////////////////////////////");
+
+			if(entity.getMapData()!=null)System.out.println(entity.getMapData().toString());
+				System.out.println("///////////////////////////////////////////////////");
+					System.out.println("///////////////////////////////////////////////////");
+						System.out.println("///////////////////////////////////////////////////");
+							System.out.println("///////////////////////////////////////////////////");
+							System.out.println("///////////////////////////////////////////////////");
+
 		KeyHolder keyHolder = new GeneratedKeyHolder();
 					
 		DAO.getInstance().getJdbcTemp().update(new PreparedStatementCreator() {
 			@Override
 			public PreparedStatement createPreparedStatement(Connection connection) throws SQLException {
-				PreparedStatement ps = connection.prepareStatement(VIEW_INSERT, Statement.RETURN_GENERATED_KEYS);
+				PreparedStatement ps ;
+				if(entity.getMapData()!=null)
+				{
+									ps= connection.prepareStatement(VIEW_INSERT, Statement.RETURN_GENERATED_KEYS);
 						 				new ArgumentPreparedStatementSetter( new Object[] { 
 						 						entity.getXid(),
 						 						entity.getName(),
@@ -288,10 +334,28 @@ public class ViewDAO implements GenericDAO<View> {
 						 						entity.getAnonymousAccess(),
 						 						new SerializationData().writeObject(entity),
 						 						entity.getHeight(),
-						 						entity.getWidth()
+						 						entity.getWidth(),
+										entity.getMapData().toString()
 						 				}).setValues(ps);
 						 				return ps;
 						 			}
+			
+			else{
+			ps= connection.prepareStatement(VIEW_INSERT, Statement.RETURN_GENERATED_KEYS);
+						 				new ArgumentPreparedStatementSetter( new Object[] { 
+						 						entity.getXid(),
+						 						entity.getName(),
+						 						entity.getBackgroundFilename(),
+						 						entity.getUserId(),
+						 						entity.getAnonymousAccess(),
+						 						new SerializationData().writeObject(entity),
+						 						entity.getHeight(),
+						 						entity.getWidth(),
+										entity.getMapData()
+						 				}).setValues(ps);
+						 				return ps;
+						 			}
+			}
 					}, keyHolder);
 					
 			entity.setId(keyHolder.getKey().intValue());		
@@ -301,8 +365,19 @@ public class ViewDAO implements GenericDAO<View> {
 	@Transactional(readOnly = false,propagation= Propagation.REQUIRES_NEW,isolation= Isolation.READ_COMMITTED,rollbackFor=SQLException.class)
 	@Override
 	public void update(View entity) {
-		
+		System.out.println("/////////////////////////////");
+		System.out.println("/////////////////////////////");
+		System.out.println("/////////////////////////////");
+		System.out.println("/////////////////////////////");
+		System.out.println("Update chala");
+			System.out.println(entity.getName());
+		System.out.println("/////////////////////////////");
+		System.out.println("/////////////////////////////");
+		System.out.println("/////////////////////////////");
+		System.out.println("/////////////////////////////");
+	
 		DAO.getInstance().getJdbcTemp().update(VIEW_UPDATE, new Object[]{
+			
 				entity.getXid(),
 				entity.getName(),
 				entity.getBackgroundFilename(),
@@ -310,6 +385,8 @@ public class ViewDAO implements GenericDAO<View> {
 				new SerializationData().writeObject(entity),
 				entity.getHeight(),
 				entity.getWidth(),
+				
+				entity.getMapData().toString(),
 				entity.getId()
 		});
 			

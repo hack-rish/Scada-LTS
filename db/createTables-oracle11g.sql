@@ -196,6 +196,7 @@ create table mangoViews (
   userId number(10) not null,
   anonymousAccess number(10) not null,
   data blob not null,
+  mapData blob,
   primary key (id)
 ) ;
 
