@@ -51,15 +51,14 @@
 			float: left;position: relative;display: block;
 		 }
 		.overlay {
-			position: relative;
-			/* padding: 5px;
+			padding: 5px;
 			border: 1px solid #39B54A;
-			background: rgba(255, 255, 255, 0.6); */
+			background: rgba(255, 255, 255, 0.6);
 		}
-		/* .overlay.wirelessTempHumSensor>div:last-child {
+		.overlay.wirelessTempHumSensor>div:last-child {
 			position: relative !important;
 			top: 0 !important;
-		} */
+		}
     </style>
     <!-- <script type="text/javascript" src="resources/app/bower_components/sweetalert2/dist/sweetalert2.min.js"></script> -->
 
@@ -446,9 +445,7 @@
 		});
 	
 		if(responseComponentData && responseComponentData.marker && responseComponentData.marker.length){
-		setTimeout(function(){
-			renderAllSavedMrkers(renderedMap);
-		},500)//if there are saved markers
+		renderAllSavedMrkers(renderedMap);//if there are saved markers
 		}
   	}
 //=============================================================================
@@ -457,25 +454,13 @@
 		var newNode,mpInfoCntnt;
 		// responseComponentData
 		responseComponentData.marker.forEach(function(elem,idx){
-			var currNode=document.querySelector('#viewContent #'+elem.dwrId);
-			var setOverlayContent=document.createElement("DIV");
-				setOverlayContent.className="overlay";
-				if(currNode){
-					currNode.className=elem.content;
-					// newNode=newNode && newNode
-					setOverlayContent.appendChild(currNode);
-				}
-				else{
-					setOverlayContent.innerHTML=elem.content;
-				}
-			// newNode=document.getElementById(elem.dwrId);
+			newNode=document.getElementById(elem.dwrId);
 			// newNode=newNode && newNode
-			// mpInfoCntnt=newNode ?newNode.innerHTML:elem.content;
+			mpInfoCntnt=newNode ?newNode.innerHTML:elem.content;
 			// console.log(mpInfoCntnt)
 			// console.log(elem.dwrId)
 			// console.log(newNode.innerHTML)
-			// addMarker(elem,mpInfoCntnt);
-			addMarker(elem,setOverlayContent);
+			addMarker(elem,mpInfoCntnt);
 		})
   	}
 //=============================================================================
@@ -486,7 +471,7 @@
 		// let mpInfoCntnt=location.content && location.content.length?location.content:'infoContent';
 		var marker=new DraggableOverlay(
 				renderedMap, new google.maps.LatLng({"lat":location.lat,"lng":location.lng}),
-				mpInfoCntnt
+				location.content == "wirelessTempHumSensor" ?'<div class="overlay wirelessTempHumSensor" onclick="javascript:void(0)">'+mpInfoCntnt+'</div>': '<div class="overlay" onclick="javascript:void(0)">'+mpInfoCntnt+'</div>'
 			);
 			marker["id"]=location.id;
 		//update markers array

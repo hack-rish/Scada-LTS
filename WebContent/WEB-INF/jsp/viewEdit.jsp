@@ -82,9 +82,10 @@
         display: none;
     }
     .overlay {
-      padding: 5px;
+      position: relative;
+      /* padding: 5px;
       border: 1px solid #39B54A;
-      background: rgba(255, 255, 255, 0.6);
+      background: rgba(255, 255, 255, 0.6); */
     }
     .overlay> div{
       position: relative !important ;  

@@ -66,7 +66,7 @@
     </div>
   </c:when>
   <c:when test="${!vc.customComponent}">
-    <div style="${vc.style}">${vc.staticContent}</div>
+    <div id="c${vc.id}" style="${vc.style}">${vc.staticContent}</div>
   </c:when>
   <c:when test="${vc.customComponent}">
     <div id="c${vc.id}" style="${vc.style}">
